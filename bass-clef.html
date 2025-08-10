@@ -139,6 +139,8 @@
   let oscillator;
   let gainNode;
   let audioReady = false;
+  
+  // 錯誤音效使用合成音效
 
   // 初始化音效系統
   function initAudio() {
@@ -152,7 +154,7 @@
   }
 
   // 播放音效函數
-  function playSound(frequency, duration, type = 'sine') {
+  function playSound(frequency, duration, type = 'sine', volume = 0.3) {
     if (!soundEnabled.checked || !audioReady) return;
     
     try {
@@ -160,10 +162,10 @@
       if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => {
           // 恢復後再播放音效
-          playSoundAfterResume(frequency, duration, type);
+          playSoundAfterResume(frequency, duration, type, volume);
         });
       } else {
-        playSoundAfterResume(frequency, duration, type);
+        playSoundAfterResume(frequency, duration, type, volume);
       }
       
     } catch (e) {
@@ -172,7 +174,7 @@
   }
 
   // 恢復後播放音效的函數
-  function playSoundAfterResume(frequency, duration, type) {
+  function playSoundAfterResume(frequency, duration, type, volume = 0.3) {
     try {
       // 創建振盪器
       oscillator = audioContext.createOscillator();
@@ -186,7 +188,7 @@
       
       // 設置音量包絡
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+      gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
       
       oscillator.start(audioContext.currentTime);
@@ -197,23 +199,62 @@
     }
   }
 
-  // 答對音效
-  function playCorrectSound() {
+  // 答對音效 - 播放對應的音符
+  function playCorrectSound(noteName) {
     if (!soundEnabled.checked) return;
     
-    // 播放愉快的音調序列
-    playSound(523.25, 0.2, 'sine'); // C5
-    setTimeout(() => playSound(659.25, 0.2, 'sine'), 200); // E5
-    setTimeout(() => playSound(783.99, 0.3, 'sine'), 400); // G5
+    // 根據音符名稱播放對應的音頻
+    const noteFrequencies = {
+      'do': 130.81,  // C3 (低音 do)
+      're': 146.83,  // D3 (低音 re)
+      'mi': 164.81,  // E3 (低音 mi)
+      'fa': 174.61,  // F3 (低音 fa)
+      'sol': 196.00  // G3 (低音 sol)
+    };
+    
+    const frequency = noteFrequencies[noteName];
+    if (frequency) {
+      // 播放對應的音符，延長播放時間讓學生能清楚聽到，並調大音量
+      playSound(frequency, 0.8, 'sine', 1.0);
+    }
   }
 
-  // 答錯音效
+  // 答錯音效 - 播放系統錯誤音效
   function playWrongSound() {
-    if (!soundEnabled.checked) return;
+    if (!soundEnabled.checked || !audioReady) return;
     
-    // 播放溫和的低音調
-    playSound(400, 0.4, 'sine'); // 提高頻率到400Hz，延長到0.4秒
-    console.log('播放錯誤音效');
+    try {
+      // 創建系統錯誤音效（類似 Windows 錯誤音）
+      const oscillator1 = audioContext.createOscillator();
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator1.connect(gainNode);
+      oscillator2.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // 設置兩個不同頻率的振盪器（更溫和的錯誤音）
+      oscillator1.frequency.setValueAtTime(400, audioContext.currentTime);
+      oscillator2.frequency.setValueAtTime(300, audioContext.currentTime);
+      
+      oscillator1.type = 'sine';
+      oscillator2.type = 'sine';
+      
+      // 設置音量包絡（更溫和的音量）
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.03, audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator1.start(audioContext.currentTime);
+      oscillator2.start(audioContext.currentTime);
+      oscillator1.stop(audioContext.currentTime + 0.5);
+      oscillator2.stop(audioContext.currentTime + 0.5);
+      
+    } catch (e) {
+      console.log('系統錯誤音效播放失敗:', e);
+      // 回退到簡單音效
+      playSound(200, 0.4, 'sine');
+    }
   }
 
   function showNote(index) {
@@ -247,7 +288,7 @@
         btn.style.backgroundColor = '#a6e6a6'; // 綠色
         
         // 播放答對音效
-        playCorrectSound();
+        playCorrectSound(correct);
       } else {
         resultEl.textContent = `答錯了，正確答案是：${correct}`;
         resultEl.style.color = 'red';
