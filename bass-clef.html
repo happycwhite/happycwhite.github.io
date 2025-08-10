@@ -67,7 +67,7 @@
 
 <h1>認識低音譜號音符遊戲</h1>
 
-<p>請選出這個音符是什麼音？</p>
+<p>請選出這個音符是什麼音？(do re mi fa sol)</p>
 
 <!-- 開始遊戲按鈕 -->
 <div id="startSection" style="margin: 20px 0;">
@@ -82,9 +82,6 @@
   <div class="audio-controls">
     <label>
       <input type="checkbox" id="soundEnabled" checked> 啟用音效
-    </label>
-    <label>
-      <input type="checkbox" id="vibrationEnabled" checked> 啟用震動
     </label>
   </div>
 
@@ -104,11 +101,11 @@
   </svg>
 
   <div id="options">
-    <button class="option-btn" data-answer="do">Do</button>
-    <button class="option-btn" data-answer="re">Re</button>
-    <button class="option-btn" data-answer="mi">Mi</button>
-    <button class="option-btn" data-answer="fa">Fa</button>
-    <button class="option-btn" data-answer="sol">Sol</button>
+    <button class="option-btn" data-answer="do">do</button>
+    <button class="option-btn" data-answer="re">re</button>
+    <button class="option-btn" data-answer="mi">mi</button>
+    <button class="option-btn" data-answer="fa">fa</button>
+    <button class="option-btn" data-answer="sol">sol</button>
   </div>
 
   <button id="nextBtn" disabled>下一題</button>
@@ -133,7 +130,6 @@
   const nextBtn = document.getElementById('nextBtn');
   const resultEl = document.getElementById('result');
   const soundEnabled = document.getElementById('soundEnabled');
-  const vibrationEnabled = document.getElementById('vibrationEnabled');
   const startBtn = document.getElementById('startBtn');
   const gameSection = document.getElementById('gameSection');
   const startSection = document.getElementById('startSection');
@@ -220,13 +216,6 @@
     console.log('播放錯誤音效');
   }
 
-  // 震動函數
-  function vibrate(pattern = [100, 50, 100]) {
-    if (vibrationEnabled.checked && navigator.vibrate) {
-      navigator.vibrate(pattern);
-    }
-  }
-
   function showNote(index) {
     const note = notes[index];
     noteEl.setAttribute('cy', note.y);
@@ -257,9 +246,8 @@
         resultEl.style.color = 'green';
         btn.style.backgroundColor = '#a6e6a6'; // 綠色
         
-        // 播放答對音效和震動
+        // 播放答對音效
         playCorrectSound();
-        vibrate([100, 50, 100]);
       } else {
         resultEl.textContent = `答錯了，正確答案是：${correct}`;
         resultEl.style.color = 'red';
@@ -272,9 +260,8 @@
           }
         });
         
-        // 播放答錯音效和震動
+        // 播放答錯音效
         playWrongSound();
-        vibrate([200, 100, 200]);
       }
 
       // 按鈕禁用避免重複答題
@@ -297,4 +284,4 @@
 </script>
 
 </body>
-</html>
+</html> 
