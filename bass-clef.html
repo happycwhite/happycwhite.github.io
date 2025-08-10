@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>低音譜號音符認識遊戲（選擇題）</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 400px;
+    margin: 20px auto;
+    text-align: center;
+  }
+  svg {
+    width: 100%;
+    max-width: 400px;
+    height: 200px;
+    margin: 10px auto;
+    display: block;
+    background: #f9f9f9;
+  }
+  .note {
+    fill: black;
+    stroke: black;
+    stroke-width: 1;
+  }
+  button.option-btn {
+    font-size: 1.2em;
+    margin: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+  }
+  button.option-btn:disabled {
+    background-color: #ddd;
+    cursor: default;
+  }
+  #nextBtn {
+    margin-top: 15px;
+    padding: 8px 20px;
+    font-size: 1em;
+  }
+  .result {
+    font-size: 1.3em;
+    margin-top: 10px;
+    min-height: 28px;
+  }
+
+  line {
+    stroke: #787878;
+    stroke-width: 2;
+    
+  }
+  
+  .audio-controls {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+  }
+  
+  .audio-controls label {
+    margin-right: 15px;
+  }
+</style>
+</head>
+<body>
+
+<h1>認識低音譜號音符遊戲</h1>
+
+<p>請選出這個音符是什麼音？</p>
+
+<!-- 開始遊戲按鈕 -->
+<div id="startSection" style="margin: 20px 0;">
+  <button id="startBtn" style="font-size: 1.2em; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+    開始遊戲 🎵
+  </button>
+</div>
+
+<!-- 遊戲區域 -->
+<div id="gameSection" style="display: none;">
+  <!-- 音效控制 -->
+  <div class="audio-controls">
+    <label>
+      <input type="checkbox" id="soundEnabled" checked> 啟用音效
+    </label>
+    <label>
+      <input type="checkbox" id="vibrationEnabled" checked> 啟用震動
+    </label>
+  </div>
+
+  <svg viewBox="0 0 170 150" aria-label="低音譜號音符圖" role="img" >
+    <!-- 五線譜，長度約翻倍 -->
+    <line x1="10" y1="30" x2="190" y2="30" stroke="black" stroke-width="2"/>
+    <line x1="10" y1="50" x2="190" y2="50" stroke="black" stroke-width="2"/>
+    <line x1="10" y1="70" x2="190" y2="70" stroke="black" stroke-width="2"/>
+    <line x1="10" y1="90" x2="190" y2="90" stroke="black" stroke-width="2"/>
+    <line x1="10" y1="110" x2="190" y2="110" stroke="black" stroke-width="2"/>
+
+    <!-- 低音譜號符號 -->
+    <text x="20" y="103" font-size="110" font-family="serif">𝄢</text>
+
+    <!-- 全音符 -->
+    <circle id="note" class="note" cx="140" cy="0" r="10" />
+  </svg>
+
+  <div id="options">
+    <button class="option-btn" data-answer="do">Do</button>
+    <button class="option-btn" data-answer="re">Re</button>
+    <button class="option-btn" data-answer="mi">Mi</button>
+    <button class="option-btn" data-answer="fa">Fa</button>
+    <button class="option-btn" data-answer="sol">Sol</button>
+  </div>
+
+  <button id="nextBtn" disabled>下一題</button>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+  // 音符資料：y座標代表音符中心位置
+  const notes = [
+    { name: 'do', y: 80, displayName: 'C間 (do)' },  // C3
+    { name: 're', y: 70, displayName: 'D線 (re)' },  // D3
+    { name: 'mi', y: 60, displayName: 'E間 (mi)' },  // E3
+    { name: 'fa', y: 50, displayName: 'F線 (fa)' },  // F3
+    { name: 'sol', y: 40, displayName: 'G間 (sol)' } // G3
+  ];
+
+  let currentIndex = -1;
+
+  const noteEl = document.getElementById('note');
+  const optionButtons = document.querySelectorAll('.option-btn');
+  const nextBtn = document.getElementById('nextBtn');
+  const resultEl = document.getElementById('result');
+  const soundEnabled = document.getElementById('soundEnabled');
+  const vibrationEnabled = document.getElementById('vibrationEnabled');
+  const startBtn = document.getElementById('startBtn');
+  const gameSection = document.getElementById('gameSection');
+  const startSection = document.getElementById('startSection');
+
+  // 音效系統
+  let audioContext;
+  let oscillator;
+  let gainNode;
+  let audioReady = false;
+
+  // 初始化音效系統
+  function initAudio() {
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      audioReady = true;
+      console.log('音效系統初始化成功');
+    } catch (e) {
+      console.log('音效系統初始化失敗:', e);
+    }
+  }
+
+  // 播放音效函數
+  function playSound(frequency, duration, type = 'sine') {
+    if (!soundEnabled.checked || !audioReady) return;
+    
+    try {
+      // 如果音效上下文被暫停，恢復它並等待
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          // 恢復後再播放音效
+          playSoundAfterResume(frequency, duration, type);
+        });
+      } else {
+        playSoundAfterResume(frequency, duration, type);
+      }
+      
+    } catch (e) {
+      console.log('音效播放失敗:', e);
+    }
+  }
+
+  // 恢復後播放音效的函數
+  function playSoundAfterResume(frequency, duration, type) {
+    try {
+      // 創建振盪器
+      oscillator = audioContext.createOscillator();
+      gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      oscillator.type = type;
+      
+      // 設置音量包絡
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration);
+      
+    } catch (e) {
+      console.log('音效播放失敗:', e);
+    }
+  }
+
+  // 答對音效
+  function playCorrectSound() {
+    if (!soundEnabled.checked) return;
+    
+    // 播放愉快的音調序列
+    playSound(523.25, 0.2, 'sine'); // C5
+    setTimeout(() => playSound(659.25, 0.2, 'sine'), 200); // E5
+    setTimeout(() => playSound(783.99, 0.3, 'sine'), 400); // G5
+  }
+
+  // 答錯音效
+  function playWrongSound() {
+    if (!soundEnabled.checked) return;
+    
+    // 播放溫和的低音調
+    playSound(400, 0.4, 'sine'); // 提高頻率到400Hz，延長到0.4秒
+    console.log('播放錯誤音效');
+  }
+
+  // 震動函數
+  function vibrate(pattern = [100, 50, 100]) {
+    if (vibrationEnabled.checked && navigator.vibrate) {
+      navigator.vibrate(pattern);
+    }
+  }
+
+  function showNote(index) {
+    const note = notes[index];
+    noteEl.setAttribute('cy', note.y);
+
+    // 重置按鈕狀態
+    optionButtons.forEach(btn => {
+      btn.disabled = false;
+      btn.style.backgroundColor = '';
+    });
+
+    nextBtn.disabled = true;
+    resultEl.textContent = '';
+  }
+
+  function nextNote() {
+    currentIndex = Math.floor(Math.random() * notes.length);
+    console.log(currentIndex, notes[currentIndex])
+    showNote(currentIndex);
+  }
+
+  optionButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const selected = btn.getAttribute('data-answer');
+      const correct = notes[currentIndex].name;
+
+      if (selected === correct) {
+        resultEl.textContent = '答對了！🎉';
+        resultEl.style.color = 'green';
+        btn.style.backgroundColor = '#a6e6a6'; // 綠色
+        
+        // 播放答對音效和震動
+        playCorrectSound();
+        vibrate([100, 50, 100]);
+      } else {
+        resultEl.textContent = `答錯了，正確答案是：${correct}`;
+        resultEl.style.color = 'red';
+        btn.style.backgroundColor = '#f4a6a6'; // 紅色
+
+        // 同時標示正確答案
+        optionButtons.forEach(b => {
+          if (b.getAttribute('data-answer') === correct) {
+            b.style.backgroundColor = '#a6e6a6';
+          }
+        });
+        
+        // 播放答錯音效和震動
+        playWrongSound();
+        vibrate([200, 100, 200]);
+      }
+
+      // 按鈕禁用避免重複答題
+      optionButtons.forEach(b => b.disabled = true);
+      nextBtn.disabled = false;
+    });
+  });
+
+  nextBtn.addEventListener('click', () => {
+    nextNote();
+  });
+
+  // 開始遊戲邏輯
+  startBtn.addEventListener('click', () => {
+    startSection.style.display = 'none';
+    gameSection.style.display = 'block';
+    initAudio(); // 遊戲開始時初始化音效
+    nextNote(); // 開始出題
+  });
+</script>
+
+</body>
+</html>
