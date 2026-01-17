@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>熊熊挑戰</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #fff0f6;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #game-box {
+            background: white;
+            padding: 40px 20px;
+            border-radius: 40px;
+            box-shadow: 0 10px 0 #ffc0cb;
+            text-align: center;
+            width: 350px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        /* 題號標示 */
+        .q-num {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ff9fb2;
+            margin-right: 15px;
+            width: 30px;
+        }
+
+        input {
+            width: 60%;
+            padding: 12px;
+            border: 5px solid #ffe4e8;
+            border-radius: 20px;
+            font-size: 30px;
+            text-align: center;
+            color: #ff6b6b;
+            outline: none;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        input.correct-border {
+            border-color: #a2ef9d;
+            background-color: #fafffa;
+        }
+
+        /* 勾勾 */
+        .check-mark {
+            font-size: 28px;
+            margin-left: 10px;
+            width: 30px;
+            visibility: hidden;
+            transform: scale(0);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .check-mark.show {
+            visibility: visible;
+            transform: scale(1.1);
+        }
+
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 15px 60px;
+            border-radius: 40px;
+            font-size: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #d64545;
+            margin-top: 10px;
+        }
+
+        button:active { transform: translateY(4px); box-shadow: 0 2px 0 #d64545; }
+
+        #result {
+            display: none;
+            animation: bounceIn 0.8s ease forwards;
+        }
+
+        .result-img {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-box">
+    <div id="quiz-area">
+        <div class="input-row">
+            <span class="q-num">1.</span>
+            <input type="text" id="a1" autocomplete="off" oninput="liveCheck()" autofocus>
+            <span id="check1" class="check-mark">✅</span>
+        </div>
+        
+        <div class="input-row">
+            <span class="q-num">2.</span>
+            <input type="text" id="a2" autocomplete="off" oninput="liveCheck()">
+            <span id="check2" class="check-mark">✅</span>
+        </div>
+
+        <button onclick="finalSubmit()">OK</button>
+    </div>
+
+    <div id="result">
+        <img src="./Gemini_Generated_Image_ilajjkilajjkilaj.png" id="final-img" class="result-img">
+        <br><br>
+        <button onclick="location.reload()" style="background:#4caf50; box-shadow: 0 6px 0 #2e7d32; font-size: 20px;">REPLAY</button>
+    </div>
+</div>
+
+<script>
+    function liveCheck() {
+        var v1 = document.getElementById('a1').value.trim().toLowerCase();
+        var v2 = document.getElementById('a2').value.trim().toLowerCase();
+
+        // 檢查第一題 (HELP)
+        if (v1 === "help") {
+            document.getElementById('check1').classList.add('show');
+            document.getElementById('a1').classList.add('correct-border');
+        } else {
+            document.getElementById('check1').classList.remove('show');
+            document.getElementById('a1').classList.remove('correct-border');
+        }
+
+        // 檢查第二題 (BEAR)
+        if (v2 === "bear") {
+            document.getElementById('check2').classList.add('show');
+            document.getElementById('a2').classList.add('correct-border');
+        } else {
+            document.getElementById('check2').classList.remove('show');
+            document.getElementById('a2').classList.remove('correct-border');
+        }
+    }
+
+    function finalSubmit() {
+        var v1 = document.getElementById('a1').value.trim().toLowerCase();
+        var v2 = document.getElementById('a2').value.trim().toLowerCase();
+
+        if (v1 === "help" && v2 === "bear") {
+            document.getElementById('quiz-area').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+        } else {
+            if (v1 !== "help") document.getElementById('a1').value = "";
+            if (v2 !== "bear") document.getElementById('a2').value = "";
+            liveCheck();
+        }
+    }
+</script>
+
+</body>
+</html>
