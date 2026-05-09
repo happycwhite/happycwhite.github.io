@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; echo \"$f\" | grep -qE 'game/[^/]+\\.html$' && ! echo \"$f\" | grep -q 'game/index\\.html$' && node /Users/poyin.chen/Documents/happycwhite.github.io/.claude/update-game-index.js; } 2>/dev/null || true",
+            "statusMessage": "Updating game index..."
+          }
+        ]
+      }
+    ]
+  }
+}
