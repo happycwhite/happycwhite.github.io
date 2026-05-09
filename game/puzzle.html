@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拼圖遊戲</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px;
+      gap: 16px;
+    }
+
+    h1 { color: #e94560; font-size: 1.8rem; letter-spacing: 2px; }
+
+    /* ── Controls ── */
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      background: #16213e;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: 1px solid #0f3460;
+    }
+    .upload-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .file-label {
+      background: #e94560;
+      color: #fff;
+      padding: 9px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background .2s;
+      white-space: nowrap;
+    }
+    .file-label:hover { background: #c73652; }
+    input[type="file"] { display: none; }
+    .upload-note { font-size: .75rem; color: #666; padding-left: 2px; }
+    #upload-error { font-size: .75rem; color: #e94560; padding-left: 2px; display: none; }
+    .ctrl-group { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #aaa; }
+    select {
+      background: #0f3460; color: #fff;
+      border: 1px solid #e94560;
+      padding: 7px 10px; border-radius: 8px;
+      font-size: 0.9rem; cursor: pointer;
+    }
+    .btn {
+      background: #0f3460; color: #fff;
+      border: 1px solid #e94560;
+      padding: 9px 16px; border-radius: 8px;
+      cursor: pointer; font-size: 0.9rem;
+      transition: background .2s; white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { background: #e94560; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Game row: ref panel + play field ── */
+    #game-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    /* ── Left: reference panel ── */
+    #ref-panel {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 160px;
+      flex-shrink: 0;
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 12px;
+      padding: 14px 12px;
+    }
+    #ref-panel h3 { font-size: .75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    #ref-img {
+      width: 136px; height: 136px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 2px solid #0f3460;
+    }
+    #ref-panel .hide-btn {
+      font-size: .78rem; color: #666;
+      background: none; border: 1px solid #333;
+      border-radius: 6px; padding: 4px 10px;
+      cursor: pointer; width: 100%;
+      transition: color .2s, border-color .2s;
+    }
+    #ref-panel .hide-btn:hover { color: #aaa; border-color: #555; }
+
+    /* ── Play field ── */
+    #play-field {
+      position: relative;
+      background: radial-gradient(ellipse at center, #1e1e3a 0%, #12112a 100%);
+      border-radius: 14px;
+      border: 1px solid #0f3460;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* ── Upload hint (before image) ── */
+    #hint {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #444; gap: 10px; pointer-events: none;
+    }
+    #hint .icon { font-size: 3.5rem; }
+    #hint p { font-size: .95rem; line-height: 1.7; text-align: center; }
+
+    /* ── Board preview (full image shown before game starts) ── */
+    #board-preview {
+      position: absolute;
+      object-fit: cover;
+      border: 3px solid #5a3f80;
+      border-radius: 4px;
+      display: none;
+      z-index: 2;
+    }
+    #ready-msg {
+      position: absolute;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: .85rem;
+      color: #8888bb;
+      display: none;
+      pointer-events: none;
+    }
+
+    /* ── Board slots ── */
+    #board {
+      position: absolute;
+      display: grid;
+      background: #2a1f4a;
+      border: 3px solid #5a3f80;
+      border-radius: 4px;
+      z-index: 1;
+    }
+    .slot {
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      transition: background .15s, border-color .15s;
+    }
+    .slot.over { background: rgba(233,69,96,.2); border-color: #e94560; }
+
+    /* ── Pieces ── */
+    .piece {
+      position: absolute;
+      cursor: grab;
+      border-radius: 2px;
+      transition: box-shadow .15s, opacity .15s;
+      user-select: none;
+      z-index: 10;
+    }
+    .piece:hover { box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+    .piece.dragging { opacity: .45; cursor: grabbing; }
+    .piece.correct { box-shadow: 0 0 0 2px #4ecca3; }
+
+    /* ── Image confirm modal ── */
+    #img-modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.78);
+      z-index: 300;
+      align-items: center; justify-content: center;
+    }
+    #img-modal.show { display: flex; }
+    #img-modal-box {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 16px;
+      padding: 24px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 20px;
+      max-width: 480px; width: 92%;
+    }
+    #img-modal-box h3 { font-size: 1rem; color: #aaa; letter-spacing: 1px; }
+    #modal-preview {
+      max-width: 100%; max-height: 55vh;
+      object-fit: contain;
+      border-radius: 8px; border: 1px solid #0f3460;
+    }
+    .modal-btns { display: flex; gap: 12px; width: 100%; justify-content: center; }
+    .btn-cancel {
+      background: transparent; color: #aaa;
+      border: 1px solid #444;
+      padding: 9px 28px; border-radius: 8px;
+      cursor: pointer; font-size: .95rem;
+      transition: border-color .2s, color .2s;
+    }
+    .btn-cancel:hover { border-color: #aaa; color: #fff; }
+    .btn-confirm {
+      background: #e94560; color: #fff; border: none;
+      padding: 9px 28px; border-radius: 8px;
+      cursor: pointer; font-size: .95rem;
+      transition: background .2s;
+    }
+    .btn-confirm:hover { background: #c73652; }
+
+    /* ── Win overlay ── */
+    #win-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.75); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    #win-overlay.show { display: flex; }
+    #win-box {
+      background: #16213e; border: 2px solid #e94560;
+      border-radius: 20px; padding: 48px 40px;
+      text-align: center; max-width: 320px; width: 90%;
+    }
+    #win-box .em { font-size: 3.2rem; }
+    #win-box h2 { color: #e94560; margin: 12px 0 8px; font-size: 1.8rem; }
+    #win-box p  { color: #aaa; margin-bottom: 24px; }
+
+    canvas { display: none; }
+  </style>
+</head>
+<body>
+
+<h1>🧩 拼圖遊戲</h1>
+
+<div id="controls">
+  <div class="upload-group">
+    <label class="file-label" for="imageUpload">📁 選擇圖片</label>
+    <span class="upload-note">支援 JPG、PNG、WebP　｜　最大 2 MB</span>
+    <span id="upload-error"></span>
+  </div>
+  <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/webp">
+  <div class="ctrl-group">
+    <span>片數：</span>
+    <select id="gridSize">
+      <option value="2">2×2（4片）</option>
+      <option value="3" selected>3×3（9片）</option>
+      <option value="4">4×4（16片）</option>
+      <option value="5">5×5（25片）</option>
+      <option value="6">6×6（36片）</option>
+    </select>
+  </div>
+  <button class="btn" id="startBtn" disabled>▶ 開始遊戲</button>
+  <button class="btn" id="refToggleBtn" disabled>👁 原圖</button>
+</div>
+
+<div id="game-row">
+
+  <!-- Left: reference panel (shown during game) -->
+  <div id="ref-panel">
+    <h3>原圖參考</h3>
+    <img id="ref-img" alt="原圖">
+    <button class="hide-btn" id="hideRefBtn">隱藏</button>
+  </div>
+
+  <!-- Play field -->
+  <div id="play-field">
+    <!-- State 0: no image yet -->
+    <div id="hint">
+      <div class="icon">🖼️</div>
+      <p>選擇圖片後<br>按「確定」預覽</p>
+    </div>
+
+    <!-- State 1: image confirmed, not yet started -->
+    <img id="board-preview" alt="預覽">
+    <div id="ready-msg">已載入圖片　 按「開始遊戲」打散拼圖</div>
+
+    <!-- State 2: game running (slots + pieces) -->
+    <div id="board"></div>
+  </div>
+
+</div>
+
+<!-- Image confirm modal -->
+<div id="img-modal">
+  <div id="img-modal-box">
+    <h3>確認圖片</h3>
+    <img id="modal-preview" alt="預覽">
+    <div class="modal-btns">
+      <button class="btn-cancel" id="cancelImgBtn">取消</button>
+      <button class="btn-confirm" id="confirmImgBtn">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Win overlay -->
+<div id="win-overlay">
+  <div id="win-box">
+    <div class="em">🎉</div>
+    <h2>完成了！</h2>
+    <p>恭喜拼圖完成！</p>
+    <button class="btn" id="againBtn">再玩一次</button>
+  </div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+  // ── Layout ────────────────────────────────────────────
+  const BOARD_PX = 420;
+  const FIELD_W  = 880;
+  const FIELD_H  = 660;
+  const BOARD_X  = (FIELD_W - BOARD_PX) / 2;   // 230
+  const BOARD_Y  = (FIELD_H - BOARD_PX) / 2;   // 120
+
+  const playField    = document.getElementById('play-field');
+  const boardEl      = document.getElementById('board');
+  const boardPreview = document.getElementById('board-preview');
+  const readyMsg     = document.getElementById('ready-msg');
+  const refPanel     = document.getElementById('ref-panel');
+  const canvas       = document.getElementById('canvas');
+  const ctx          = canvas.getContext('2d');
+
+  // Apply layout dimensions
+  playField.style.width  = FIELD_W + 'px';
+  playField.style.height = FIELD_H + 'px';
+
+  boardEl.style.left   = BOARD_X + 'px';
+  boardEl.style.top    = BOARD_Y + 'px';
+  boardEl.style.width  = BOARD_PX + 'px';
+  boardEl.style.height = BOARD_PX + 'px';
+  boardEl.style.display = 'none';
+
+  boardPreview.style.left   = BOARD_X + 'px';
+  boardPreview.style.top    = BOARD_Y + 'px';
+  boardPreview.style.width  = BOARD_PX + 'px';
+  boardPreview.style.height = BOARD_PX + 'px';
+
+  readyMsg.style.top = (BOARD_Y + BOARD_PX + 14) + 'px';
+
+  // ── State ─────────────────────────────────────────────
+  let gridN    = 3;
+  let imageSrc = null;
+  let pending  = null;
+  let pieces   = [];
+  let slotOf   = [];
+  let pieceEls = [];
+  let drag     = { id: null, fromSlot: null, ox: 0, oy: 0 };
+
+  // ── File validation & modal trigger ──────────────────
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  const MAX_BYTES     = 2 * 1024 * 1024;
+  const errorEl       = document.getElementById('upload-error');
+
+  document.getElementById('imageUpload').addEventListener('change', e => {
+    const file = e.target.files[0];
+    e.target.value = '';   // allow re-selecting same file
+    if (!file) return;
+
+    errorEl.style.display = 'none';
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      errorEl.textContent = '格式錯誤，請上傳 JPG、PNG 或 WebP';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      errorEl.textContent = '檔案過大，請選擇 2 MB 以內的圖片';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+      pending = ev.target.result;
+      document.getElementById('modal-preview').src = pending;
+      document.getElementById('img-modal').classList.add('show');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ── Modal: cancel / confirm ───────────────────────────
+  document.getElementById('cancelImgBtn').addEventListener('click', () => {
+    pending = null;
+    document.getElementById('img-modal').classList.remove('show');
+  });
+
+  document.getElementById('confirmImgBtn').addEventListener('click', () => {
+    imageSrc = pending;
+    pending  = null;
+    document.getElementById('img-modal').classList.remove('show');
+
+    // Show image on the board
+    document.getElementById('ref-img').src = imageSrc;
+    boardPreview.src     = imageSrc;
+    boardPreview.style.display = 'block';
+    readyMsg.style.display     = 'block';
+    document.getElementById('hint').style.display = 'none';
+
+    document.getElementById('startBtn').disabled     = false;
+    document.getElementById('refToggleBtn').disabled = false;
+  });
+
+  // ── Controls ──────────────────────────────────────────
+  document.getElementById('startBtn').addEventListener('click', startGame);
+
+  document.getElementById('refToggleBtn').addEventListener('click', () => {
+    refPanel.style.display = refPanel.style.display === 'flex' ? 'none' : 'flex';
+  });
+
+  document.getElementById('hideRefBtn').addEventListener('click', () => {
+    refPanel.style.display = 'none';
+  });
+
+  document.getElementById('againBtn').addEventListener('click', () => {
+    document.getElementById('win-overlay').classList.remove('show');
+    startGame();
+  });
+
+  // ── Start: hide preview, scatter pieces ───────────────
+  function startGame() {
+    if (!imageSrc) return;
+    gridN = parseInt(document.getElementById('gridSize').value);
+
+    // Hide board preview, show game elements
+    boardPreview.style.display = 'none';
+    readyMsg.style.display     = 'none';
+    boardEl.style.display      = 'grid';
+    refPanel.style.display     = 'flex';
+
+    const img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.width, img.height);
+      canvas.width = canvas.height = BOARD_PX;
+      ctx.drawImage(img,
+        (img.width - side) / 2, (img.height - side) / 2, side, side,
+        0, 0, BOARD_PX, BOARD_PX
+      );
+      buildState();
+      renderBoard();
+      spawnPieces();
+    };
+    img.src = imageSrc;
+  }
+
+  // ── Build piece data ───────────────────────────────────
+  function buildState() {
+    const ps    = BOARD_PX / gridN;
+    const total = gridN * gridN;
+    const raw   = [];
+
+    for (let r = 0; r < gridN; r++) {
+      for (let c = 0; c < gridN; c++) {
+        const pc = document.createElement('canvas');
+        pc.width = pc.height = ps;
+        pc.getContext('2d').drawImage(canvas, c * ps, r * ps, ps, ps, 0, 0, ps, ps);
+        raw.push({ img: pc.toDataURL(), correct: r * gridN + c });
+      }
+    }
+
+    for (let i = total - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [raw[i], raw[j]] = [raw[j], raw[i]];
+    }
+
+    pieces = raw.map((p, i) => ({ id: i, correct: p.correct, img: p.img, slotIndex: null }));
+    slotOf = new Array(total).fill(null);
+  }
+
+  // ── Render board slots ─────────────────────────────────
+  function renderBoard() {
+    const ps = BOARD_PX / gridN;
+    boardEl.innerHTML = '';
+    boardEl.style.gridTemplateColumns = `repeat(${gridN}, ${ps}px)`;
+
+    for (let i = 0; i < gridN * gridN; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.dataset.i = i;
+      slot.style.width  = ps + 'px';
+      slot.style.height = ps + 'px';
+
+      slot.addEventListener('dragover',  e => { e.preventDefault(); slot.classList.add('over'); });
+      slot.addEventListener('dragleave', () => slot.classList.remove('over'));
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        slot.classList.remove('over');
+        dropOnSlot(parseInt(slot.dataset.i));
+      });
+
+      boardEl.appendChild(slot);
+    }
+  }
+
+  // ── Spawn scattered pieces ─────────────────────────────
+  function spawnPieces() {
+    pieceEls.forEach(el => el.remove());
+    pieceEls = [];
+
+    const ps  = BOARD_PX / gridN;
+    const pad = 10;
+
+    const zones = [
+      { x1: pad,                      y1: pad,                      x2: BOARD_X - ps - pad,         y2: FIELD_H - ps - pad },
+      { x1: BOARD_X + BOARD_PX + pad, y1: pad,                      x2: FIELD_W - ps - pad,         y2: FIELD_H - ps - pad },
+      { x1: BOARD_X,                  y1: pad,                      x2: BOARD_X + BOARD_PX - ps,    y2: BOARD_Y - ps - pad },
+      { x1: BOARD_X,                  y1: BOARD_Y + BOARD_PX + pad, x2: BOARD_X + BOARD_PX - ps,   y2: FIELD_H - ps - pad },
+    ].filter(z => z.x2 > z.x1 + 10 && z.y2 > z.y1 + 10);
+
+    pieces.forEach(piece => {
+      const el = document.createElement('img');
+      el.src        = piece.img;
+      el.className  = 'piece';
+      el.draggable  = true;
+      el.dataset.id = piece.id;
+      el.style.width  = ps + 'px';
+      el.style.height = ps + 'px';
+
+      const z = zones[Math.floor(Math.random() * zones.length)];
+      el.style.left = (z.x1 + Math.random() * (z.x2 - z.x1)) + 'px';
+      el.style.top  = (z.y1 + Math.random() * (z.y2 - z.y1)) + 'px';
+
+      el.addEventListener('dragstart', e => {
+        drag.id       = piece.id;
+        drag.fromSlot = pieces[piece.id].slotIndex;
+        const r = el.getBoundingClientRect();
+        drag.ox = e.clientX - r.left;
+        drag.oy = e.clientY - r.top;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', piece.id);
+        setTimeout(() => el.classList.add('dragging'), 0);
+      });
+      el.addEventListener('dragend', () => el.classList.remove('dragging'));
+
+      playField.appendChild(el);
+      pieceEls[piece.id] = el;
+    });
+  }
+
+  // ── Drop on play-field background ─────────────────────
+  playField.addEventListener('dragover', e => e.preventDefault());
+  playField.addEventListener('drop', e => {
+    e.preventDefault();
+    if (drag.id === null) return;
+
+    const fr = playField.getBoundingClientRect();
+    const ps = BOARD_PX / gridN;
+    const x  = Math.max(0, Math.min(FIELD_W - ps, e.clientX - fr.left - drag.ox));
+    const y  = Math.max(0, Math.min(FIELD_H - ps, e.clientY - fr.top  - drag.oy));
+
+    if (drag.fromSlot !== null) {
+      slotOf[drag.fromSlot]     = null;
+      pieces[drag.id].slotIndex = null;
+    }
+    moveToField(drag.id, x, y);
+  });
+
+  boardEl.addEventListener('dragover', e => e.preventDefault());
+  boardEl.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); });
+
+  // ── Drop on slot ───────────────────────────────────────
+  function dropOnSlot(slotIdx) {
+    if (drag.id === null) return;
+
+    const inId     = drag.id;
+    const fromSlot = drag.fromSlot;
+    const existId  = slotOf[slotIdx];
+
+    if (existId === inId) return;
+
+    if (fromSlot !== null) {
+      slotOf[fromSlot]       = null;
+      pieces[inId].slotIndex = null;
+    }
+
+    if (existId !== null) {
+      slotOf[slotIdx]            = null;
+      pieces[existId].slotIndex  = null;
+
+      if (fromSlot !== null) {
+        placeInSlot(existId, fromSlot);
+      } else {
+        const ps = BOARD_PX / gridN;
+        const ex = pieceEls[existId];
+        const nx = Math.max(0, Math.min(FIELD_W - ps, parseFloat(ex.style.left) + (Math.random() - .5) * 120));
+        const ny = Math.max(0, Math.min(FIELD_H - ps, parseFloat(ex.style.top)  + (Math.random() - .5) * 120));
+        moveToField(existId, nx, ny);
+      }
+    }
+
+    placeInSlot(inId, slotIdx);
+    checkWin();
+  }
+
+  // ── Helpers ────────────────────────────────────────────
+  function placeInSlot(id, slotIdx) {
+    const ps  = BOARD_PX / gridN;
+    const col = slotIdx % gridN;
+    const row = Math.floor(slotIdx / gridN);
+    const el  = pieceEls[id];
+
+    el.style.left   = (BOARD_X + col * ps) + 'px';
+    el.style.top    = (BOARD_Y + row * ps) + 'px';
+    el.style.zIndex = 5;
+    el.classList.toggle('correct', pieces[id].correct === slotIdx);
+
+    pieces[id].slotIndex = slotIdx;
+    slotOf[slotIdx]      = id;
+  }
+
+  function moveToField(id, x, y) {
+    const el = pieceEls[id];
+    el.style.left   = x + 'px';
+    el.style.top    = y + 'px';
+    el.style.zIndex = 10;
+    el.classList.remove('correct');
+    pieces[id].slotIndex = null;
+  }
+
+  function checkWin() {
+    if (pieces.every(p => p.slotIndex === p.correct)) {
+      setTimeout(() => document.getElementById('win-overlay').classList.add('show'), 350);
+    }
+  }
+</script>
+</body>
+</html>
