@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>拼圖遊戲</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,6 +32,8 @@
       padding: 14px 20px;
       border-radius: 12px;
       border: 1px solid #0f3460;
+      width: 100%;
+      max-width: 880px;
     }
     .upload-group {
       display: flex;
@@ -73,8 +75,10 @@
     /* ── Game row: ref panel + play field ── */
     #game-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 16px;
       align-items: flex-start;
+      justify-content: center;
     }
 
     /* ── Left: reference panel ── */
@@ -90,6 +94,17 @@
       border-radius: 12px;
       padding: 14px 12px;
     }
+    /* On narrow screens, ref panel goes horizontal above the field */
+    @media (max-width: 1087px) {
+      #ref-panel {
+        flex-direction: row;
+        width: auto;
+        max-width: 100%;
+        padding: 10px 16px;
+      }
+      #ref-panel h3 { writing-mode: vertical-rl; font-size: .7rem; }
+      #ref-img { width: 80px; height: 80px; }
+    }
     #ref-panel h3 { font-size: .75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
     #ref-img {
       width: 136px; height: 136px;
@@ -101,7 +116,7 @@
       font-size: .78rem; color: #666;
       background: none; border: 1px solid #333;
       border-radius: 6px; padding: 4px 10px;
-      cursor: pointer; width: 100%;
+      cursor: pointer;
       transition: color .2s, border-color .2s;
     }
     #ref-panel .hide-btn:hover { color: #aaa; border-color: #555; }
@@ -168,6 +183,7 @@
       border-radius: 2px;
       transition: box-shadow .15s, opacity .15s;
       user-select: none;
+      touch-action: none;
       z-index: 10;
     }
     .piece:hover { box-shadow: 0 4px 16px rgba(0,0,0,.5); }
@@ -311,12 +327,21 @@
 <canvas id="canvas"></canvas>
 
 <script>
-  // ── Layout ────────────────────────────────────────────
-  const BOARD_PX = 420;
-  const FIELD_W  = 880;
-  const FIELD_H  = 660;
-  const BOARD_X  = (FIELD_W - BOARD_PX) / 2;   // 230
-  const BOARD_Y  = (FIELD_H - BOARD_PX) / 2;   // 120
+  // ── Responsive layout ──────────────────────────────────
+  // L holds all pixel constants, recalculated each game start.
+  const L = {};
+
+  function calcLayout() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Estimate overhead: h1 (~50px) + controls (~70px) + gaps/padding (~60px)
+    const scale = Math.min(1, (vw - 32) / 880, (vh - 180) / 660);
+    L.FIELD_W  = Math.floor(880 * scale);
+    L.FIELD_H  = Math.floor(660 * scale);
+    L.BOARD_PX = Math.floor(420 * scale);
+    L.BOARD_X  = Math.floor((L.FIELD_W  - L.BOARD_PX) / 2);
+    L.BOARD_Y  = Math.floor((L.FIELD_H  - L.BOARD_PX) / 2);
+  }
 
   const playField    = document.getElementById('play-field');
   const boardEl      = document.getElementById('board');
@@ -326,22 +351,27 @@
   const canvas       = document.getElementById('canvas');
   const ctx          = canvas.getContext('2d');
 
-  // Apply layout dimensions
-  playField.style.width  = FIELD_W + 'px';
-  playField.style.height = FIELD_H + 'px';
+  function applyLayout() {
+    playField.style.width  = L.FIELD_W  + 'px';
+    playField.style.height = L.FIELD_H  + 'px';
 
-  boardEl.style.left   = BOARD_X + 'px';
-  boardEl.style.top    = BOARD_Y + 'px';
-  boardEl.style.width  = BOARD_PX + 'px';
-  boardEl.style.height = BOARD_PX + 'px';
+    boardEl.style.left   = L.BOARD_X  + 'px';
+    boardEl.style.top    = L.BOARD_Y  + 'px';
+    boardEl.style.width  = L.BOARD_PX + 'px';
+    boardEl.style.height = L.BOARD_PX + 'px';
+
+    boardPreview.style.left   = L.BOARD_X  + 'px';
+    boardPreview.style.top    = L.BOARD_Y  + 'px';
+    boardPreview.style.width  = L.BOARD_PX + 'px';
+    boardPreview.style.height = L.BOARD_PX + 'px';
+
+    readyMsg.style.top = (L.BOARD_Y + L.BOARD_PX + 14) + 'px';
+  }
+
+  // Initial layout
+  calcLayout();
+  applyLayout();
   boardEl.style.display = 'none';
-
-  boardPreview.style.left   = BOARD_X + 'px';
-  boardPreview.style.top    = BOARD_Y + 'px';
-  boardPreview.style.width  = BOARD_PX + 'px';
-  boardPreview.style.height = BOARD_PX + 'px';
-
-  readyMsg.style.top = (BOARD_Y + BOARD_PX + 14) + 'px';
 
   // ── State ─────────────────────────────────────────────
   let gridN    = 3;
@@ -352,6 +382,8 @@
   let pieceEls = [];
   let drag     = { id: null, fromSlot: null, ox: 0, oy: 0 };
 
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
   // ── File validation & modal trigger ──────────────────
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
   const MAX_BYTES     = 2 * 1024 * 1024;
@@ -359,7 +391,7 @@
 
   document.getElementById('imageUpload').addEventListener('change', e => {
     const file = e.target.files[0];
-    e.target.value = '';   // allow re-selecting same file
+    e.target.value = '';
     if (!file) return;
 
     errorEl.style.display = 'none';
@@ -395,11 +427,10 @@
     pending  = null;
     document.getElementById('img-modal').classList.remove('show');
 
-    // Show image on the board
     document.getElementById('ref-img').src = imageSrc;
-    boardPreview.src     = imageSrc;
-    boardPreview.style.display = 'block';
-    readyMsg.style.display     = 'block';
+    boardPreview.src            = imageSrc;
+    boardPreview.style.display  = 'block';
+    readyMsg.style.display      = 'block';
     document.getElementById('hint').style.display = 'none';
 
     document.getElementById('startBtn').disabled     = false;
@@ -427,7 +458,9 @@
     if (!imageSrc) return;
     gridN = parseInt(document.getElementById('gridSize').value);
 
-    // Hide board preview, show game elements
+    calcLayout();
+    applyLayout();
+
     boardPreview.style.display = 'none';
     readyMsg.style.display     = 'none';
     boardEl.style.display      = 'grid';
@@ -436,10 +469,10 @@
     const img = new Image();
     img.onload = () => {
       const side = Math.min(img.width, img.height);
-      canvas.width = canvas.height = BOARD_PX;
+      canvas.width = canvas.height = L.BOARD_PX;
       ctx.drawImage(img,
         (img.width - side) / 2, (img.height - side) / 2, side, side,
-        0, 0, BOARD_PX, BOARD_PX
+        0, 0, L.BOARD_PX, L.BOARD_PX
       );
       buildState();
       renderBoard();
@@ -450,7 +483,7 @@
 
   // ── Build piece data ───────────────────────────────────
   function buildState() {
-    const ps    = BOARD_PX / gridN;
+    const ps    = L.BOARD_PX / gridN;
     const total = gridN * gridN;
     const raw   = [];
 
@@ -474,7 +507,7 @@
 
   // ── Render board slots ─────────────────────────────────
   function renderBoard() {
-    const ps = BOARD_PX / gridN;
+    const ps = L.BOARD_PX / gridN;
     boardEl.innerHTML = '';
     boardEl.style.gridTemplateColumns = `repeat(${gridN}, ${ps}px)`;
 
@@ -503,15 +536,19 @@
     pieceEls.forEach(el => el.remove());
     pieceEls = [];
 
-    const ps  = BOARD_PX / gridN;
+    const ps  = L.BOARD_PX / gridN;
     const pad = 10;
 
     const zones = [
-      { x1: pad,                      y1: pad,                      x2: BOARD_X - ps - pad,         y2: FIELD_H - ps - pad },
-      { x1: BOARD_X + BOARD_PX + pad, y1: pad,                      x2: FIELD_W - ps - pad,         y2: FIELD_H - ps - pad },
-      { x1: BOARD_X,                  y1: pad,                      x2: BOARD_X + BOARD_PX - ps,    y2: BOARD_Y - ps - pad },
-      { x1: BOARD_X,                  y1: BOARD_Y + BOARD_PX + pad, x2: BOARD_X + BOARD_PX - ps,   y2: FIELD_H - ps - pad },
+      { x1: pad,                        y1: pad,                        x2: L.BOARD_X - ps - pad,           y2: L.FIELD_H - ps - pad },
+      { x1: L.BOARD_X + L.BOARD_PX + pad, y1: pad,                     x2: L.FIELD_W - ps - pad,           y2: L.FIELD_H - ps - pad },
+      { x1: L.BOARD_X,                  y1: pad,                        x2: L.BOARD_X + L.BOARD_PX - ps,    y2: L.BOARD_Y - ps - pad },
+      { x1: L.BOARD_X,                  y1: L.BOARD_Y + L.BOARD_PX + pad, x2: L.BOARD_X + L.BOARD_PX - ps, y2: L.FIELD_H - ps - pad },
     ].filter(z => z.x2 > z.x1 + 10 && z.y2 > z.y1 + 10);
+
+    // Fallback: if no valid zones (very small board/field ratio), scatter anywhere
+    const fallback = [{ x1: pad, y1: pad, x2: L.FIELD_W - ps - pad, y2: L.FIELD_H - ps - pad }];
+    const spawnZones = zones.length ? zones : fallback;
 
     pieces.forEach(piece => {
       const el = document.createElement('img');
@@ -522,10 +559,11 @@
       el.style.width  = ps + 'px';
       el.style.height = ps + 'px';
 
-      const z = zones[Math.floor(Math.random() * zones.length)];
+      const z = spawnZones[Math.floor(Math.random() * spawnZones.length)];
       el.style.left = (z.x1 + Math.random() * (z.x2 - z.x1)) + 'px';
       el.style.top  = (z.y1 + Math.random() * (z.y2 - z.y1)) + 'px';
 
+      // ── Mouse drag events ──────────────────────────────
       el.addEventListener('dragstart', e => {
         drag.id       = piece.id;
         drag.fromSlot = pieces[piece.id].slotIndex;
@@ -538,21 +576,81 @@
       });
       el.addEventListener('dragend', () => el.classList.remove('dragging'));
 
+      // ── Touch drag events ──────────────────────────────
+      el.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const t = e.touches[0];
+        const r = el.getBoundingClientRect();
+        drag.id       = piece.id;
+        drag.fromSlot = pieces[piece.id].slotIndex;
+        drag.ox = t.clientX - r.left;
+        drag.oy = t.clientY - r.top;
+        el.classList.add('dragging');
+        el.style.zIndex = '100';
+      }, { passive: false });
+
       playField.appendChild(el);
       pieceEls[piece.id] = el;
     });
   }
 
-  // ── Drop on play-field background ─────────────────────
+  // ── Global touch move / end ────────────────────────────
+  document.addEventListener('touchmove', e => {
+    if (drag.id === null) return;
+    e.preventDefault();
+    const t  = e.touches[0];
+    const fr = playField.getBoundingClientRect();
+    const ps = L.BOARD_PX / gridN;
+    const el = pieceEls[drag.id];
+    el.style.left = clamp(t.clientX - fr.left - drag.ox, 0, L.FIELD_W - ps) + 'px';
+    el.style.top  = clamp(t.clientY - fr.top  - drag.oy, 0, L.FIELD_H - ps) + 'px';
+
+    // Highlight slot under finger
+    el.style.visibility = 'hidden';
+    const below = document.elementFromPoint(t.clientX, t.clientY);
+    el.style.visibility = '';
+    document.querySelectorAll('.slot.over').forEach(s => s.classList.remove('over'));
+    if (below && below.classList.contains('slot')) below.classList.add('over');
+  }, { passive: false });
+
+  document.addEventListener('touchend', e => {
+    if (drag.id === null) return;
+    const t  = e.changedTouches[0];
+    const el = pieceEls[drag.id];
+    el.classList.remove('dragging');
+    el.style.zIndex = '';
+
+    el.style.visibility = 'hidden';
+    const below = document.elementFromPoint(t.clientX, t.clientY);
+    el.style.visibility = '';
+    document.querySelectorAll('.slot.over').forEach(s => s.classList.remove('over'));
+
+    if (below && below.classList.contains('slot')) {
+      dropOnSlot(parseInt(below.dataset.i));
+    } else {
+      const fr = playField.getBoundingClientRect();
+      const ps = L.BOARD_PX / gridN;
+      const x  = clamp(t.clientX - fr.left - drag.ox, 0, L.FIELD_W - ps);
+      const y  = clamp(t.clientY - fr.top  - drag.oy, 0, L.FIELD_H - ps);
+      if (drag.fromSlot !== null) {
+        slotOf[drag.fromSlot]     = null;
+        pieces[drag.id].slotIndex = null;
+      }
+      moveToField(drag.id, x, y);
+    }
+    drag.id = null;
+  });
+
+  // ── Drop on play-field background (mouse) ─────────────
   playField.addEventListener('dragover', e => e.preventDefault());
   playField.addEventListener('drop', e => {
     e.preventDefault();
     if (drag.id === null) return;
 
     const fr = playField.getBoundingClientRect();
-    const ps = BOARD_PX / gridN;
-    const x  = Math.max(0, Math.min(FIELD_W - ps, e.clientX - fr.left - drag.ox));
-    const y  = Math.max(0, Math.min(FIELD_H - ps, e.clientY - fr.top  - drag.oy));
+    const ps = L.BOARD_PX / gridN;
+    const x  = clamp(e.clientX - fr.left - drag.ox, 0, L.FIELD_W - ps);
+    const y  = clamp(e.clientY - fr.top  - drag.oy, 0, L.FIELD_H - ps);
 
     if (drag.fromSlot !== null) {
       slotOf[drag.fromSlot]     = null;
@@ -580,16 +678,16 @@
     }
 
     if (existId !== null) {
-      slotOf[slotIdx]            = null;
-      pieces[existId].slotIndex  = null;
+      slotOf[slotIdx]           = null;
+      pieces[existId].slotIndex = null;
 
       if (fromSlot !== null) {
         placeInSlot(existId, fromSlot);
       } else {
-        const ps = BOARD_PX / gridN;
+        const ps = L.BOARD_PX / gridN;
         const ex = pieceEls[existId];
-        const nx = Math.max(0, Math.min(FIELD_W - ps, parseFloat(ex.style.left) + (Math.random() - .5) * 120));
-        const ny = Math.max(0, Math.min(FIELD_H - ps, parseFloat(ex.style.top)  + (Math.random() - .5) * 120));
+        const nx = clamp(parseFloat(ex.style.left) + (Math.random() - .5) * 120, 0, L.FIELD_W - ps);
+        const ny = clamp(parseFloat(ex.style.top)  + (Math.random() - .5) * 120, 0, L.FIELD_H - ps);
         moveToField(existId, nx, ny);
       }
     }
@@ -600,14 +698,14 @@
 
   // ── Helpers ────────────────────────────────────────────
   function placeInSlot(id, slotIdx) {
-    const ps  = BOARD_PX / gridN;
+    const ps  = L.BOARD_PX / gridN;
     const col = slotIdx % gridN;
     const row = Math.floor(slotIdx / gridN);
     const el  = pieceEls[id];
 
-    el.style.left   = (BOARD_X + col * ps) + 'px';
-    el.style.top    = (BOARD_Y + row * ps) + 'px';
-    el.style.zIndex = 5;
+    el.style.left   = (L.BOARD_X + col * ps) + 'px';
+    el.style.top    = (L.BOARD_Y + row * ps) + 'px';
+    el.style.zIndex = '5';
     el.classList.toggle('correct', pieces[id].correct === slotIdx);
 
     pieces[id].slotIndex = slotIdx;
@@ -618,7 +716,7 @@
     const el = pieceEls[id];
     el.style.left   = x + 'px';
     el.style.top    = y + 'px';
-    el.style.zIndex = 10;
+    el.style.zIndex = '10';
     el.classList.remove('correct');
     pieces[id].slotIndex = null;
   }
