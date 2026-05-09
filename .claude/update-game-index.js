@@ -56,8 +56,8 @@ const html = `<!DOCTYPE html>
 
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: #1a1a2e;
-      color: #eee;
+      background: #fff0f6;
+      color: #555;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -68,7 +68,7 @@ const html = `<!DOCTYPE html>
     h1 {
       font-size: 2rem;
       margin-bottom: 40px;
-      color: #e0aaff;
+      color: #e91e8c;
       letter-spacing: 2px;
     }
 
@@ -81,8 +81,8 @@ const html = `<!DOCTYPE html>
     }
 
     .game-card {
-      background: #16213e;
-      border: 1px solid #0f3460;
+      background: #ffffff;
+      border: 1px solid #f8bbd0;
       border-radius: 12px;
       padding: 28px 24px;
       text-decoration: none;
@@ -91,12 +91,13 @@ const html = `<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       gap: 10px;
+      box-shadow: 0 4px 20px rgba(233, 30, 140, 0.08);
     }
 
     .game-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(224, 170, 255, 0.2);
-      border-color: #e0aaff;
+      box-shadow: 0 8px 24px rgba(233, 30, 140, 0.18);
+      border-color: #e91e8c;
     }
 
     .game-icon {
@@ -106,12 +107,12 @@ const html = `<!DOCTYPE html>
     .game-title {
       font-size: 1.2rem;
       font-weight: bold;
-      color: #e0aaff;
+      color: #e91e8c;
     }
 
     .game-desc {
       font-size: 0.9rem;
-      color: #aaa;
+      color: #999;
       line-height: 1.5;
     }
   </style>
