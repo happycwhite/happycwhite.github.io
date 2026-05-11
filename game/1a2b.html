@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1A2B</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #fff0f6;
+      color: #555;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    h1 { font-size: 1.8rem; color: #e91e8c; }
+
+    .subtitle { font-size: 0.9rem; color: #999; text-align: center; line-height: 1.6; }
+
+    .game-box {
+      background: #fff;
+      border: 1px solid #f8bbd0;
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(233, 30, 140, 0.1);
+    }
+
+    .attempts { font-size: 0.9rem; color: #999; }
+    .attempts span { color: #e91e8c; font-weight: bold; }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .digit-inputs {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .digit-inputs input {
+      flex: 1;
+      padding: 12px 0;
+      border-radius: 10px;
+      border: 2px solid #f8bbd0;
+      background: #fff;
+      color: #555;
+      font-size: 1.4rem;
+      text-align: center;
+      outline: none;
+      width: 0;
+    }
+
+    .digit-inputs input:focus { border-color: #e91e8c; }
+
+    button {
+      padding: 12px 18px;
+      border-radius: 10px;
+      border: none;
+      background: #e91e8c;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    button:hover { background: #c2185b; }
+    button:disabled { background: #eee; color: #bbb; cursor: default; }
+
+    .error { font-size: 0.85rem; color: #e91e8c; min-height: 1.2rem; }
+
+    .history {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff0f6;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.95rem;
+    }
+
+    .history-row .guess { font-weight: bold; letter-spacing: 4px; color: #555; }
+    .history-row .result { color: #e91e8c; font-weight: bold; font-size: 0.9rem; }
+
+    .message {
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-align: center;
+      min-height: 1.5rem;
+    }
+    .message.win  { color: #2e7d32; }
+    .message.lose { color: #c62828; }
+
+    .restart-btn {
+      background: transparent;
+      border: 1px solid #e91e8c;
+      color: #e91e8c;
+      font-size: 0.9rem;
+      padding: 8px 20px;
+    }
+    .restart-btn:hover { background: #fce4ec; }
+
+    a.back { font-size: 0.85rem; color: #bbb; text-decoration: none; }
+    a.back:hover { color: #999; }
+  </style>
+</head>
+<body>
+
+<h1>🔢 1A2B</h1>
+<p class="subtitle">猜出隱藏的 4 位不重複數字<br>A = 數字和位置都對，B = 數字對但位置不對</p>
+
+<div class="game-box">
+  <div class="attempts">剩餘次數：<span id="left">10</span></div>
+
+  <div class="input-row">
+    <div class="digit-inputs">
+      <input type="number" min="0" max="9" maxlength="1" id="d0" />
+      <input type="number" min="0" max="9" maxlength="1" id="d1" />
+      <input type="number" min="0" max="9" maxlength="1" id="d2" />
+      <input type="number" min="0" max="9" maxlength="1" id="d3" />
+    </div>
+    <button id="submitBtn" onclick="submitGuess()">猜</button>
+  </div>
+
+  <div class="error" id="error"></div>
+
+  <div class="history" id="history"></div>
+
+  <div class="message" id="message"></div>
+
+  <button class="restart-btn" onclick="restart()">重新開始</button>
+</div>
+
+<a class="back" href="index.html">← 回遊戲列表</a>
+
+<script>
+  let answer, attemptsLeft, over;
+  const inputs = [0,1,2,3].map(i => document.getElementById('d' + i));
+
+  function generateAnswer() {
+    const digits = [];
+    const pool = Array.from({length: 10}, (_, i) => i);
+    for (let i = 0; i < 4; i++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      digits.push(pool.splice(idx, 1)[0]);
+    }
+    return digits;
+  }
+
+  function init() {
+    answer = generateAnswer();
+    attemptsLeft = 10;
+    over = false;
+    document.getElementById('left').textContent = attemptsLeft;
+    document.getElementById('history').innerHTML = '';
+    document.getElementById('message').textContent = '';
+    document.getElementById('message').className = 'message';
+    document.getElementById('error').textContent = '';
+    document.getElementById('submitBtn').disabled = false;
+    inputs.forEach(inp => { inp.value = ''; inp.disabled = false; });
+    inputs[0].focus();
+  }
+
+  function getGuess() {
+    return inputs.map(inp => inp.value.trim());
+  }
+
+  function evaluate(guess) {
+    let a = 0, b = 0;
+    guess.forEach((d, i) => {
+      if (parseInt(d) === answer[i]) a++;
+      else if (answer.includes(parseInt(d))) b++;
+    });
+    return { a, b };
+  }
+
+  function submitGuess() {
+    if (over) return;
+    const guess = getGuess();
+    const errEl = document.getElementById('error');
+
+    if (guess.some(d => d === '')) { errEl.textContent = '請填入 4 個數字'; return; }
+    if (new Set(guess).size !== 4) { errEl.textContent = '4 個數字不能重複'; return; }
+    errEl.textContent = '';
+
+    const { a, b } = evaluate(guess);
+    attemptsLeft--;
+    document.getElementById('left').textContent = attemptsLeft;
+
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    row.innerHTML = `<span class="guess">${guess.join(' ')}</span><span class="result">${a}A${b}B</span>`;
+    document.getElementById('history').prepend(row);
+
+    inputs.forEach(inp => inp.value = '');
+    inputs[0].focus();
+
+    const msgEl = document.getElementById('message');
+    if (a === 4) {
+      msgEl.textContent = `🎉 答對了！答案是 ${answer.join('')}`;
+      msgEl.className = 'message win';
+      endGame();
+    } else if (attemptsLeft === 0) {
+      msgEl.textContent = `😢 答案是 ${answer.join('')}`;
+      msgEl.className = 'message lose';
+      endGame();
+    }
+  }
+
+  function endGame() {
+    over = true;
+    inputs.forEach(inp => inp.disabled = true);
+    document.getElementById('submitBtn').disabled = true;
+  }
+
+  function restart() { init(); }
+
+  // Auto-advance on single digit input
+  inputs.forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      const val = inp.value.replace(/[^0-9]/g, '');
+      inp.value = val.slice(-1);
+      if (val && i < 3) inputs[i + 1].focus();
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitGuess();
+      if (e.key === 'Backspace' && inp.value === '' && i > 0) inputs[i - 1].focus();
+    });
+  });
+
+  init();
+</script>
+</body>
+</html>
