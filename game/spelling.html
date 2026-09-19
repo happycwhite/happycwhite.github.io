@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>拼字大挑戰</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #fff0f6;
+      color: #555;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      gap: 20px;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    h1 { font-size: 1.8rem; color: #e91e8c; }
+    .subtitle { color: #999; font-size: 0.95rem; text-align: center; }
+
+    .game-box {
+      background: #ffffff;
+      border: 1px solid #f8bbd0;
+      border-radius: 16px;
+      padding: 28px 22px;
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(233, 30, 140, 0.1);
+    }
+
+    .status {
+      font-size: 0.9rem;
+      color: #999;
+      display: flex;
+      gap: 18px;
+    }
+    .status span { color: #e91e8c; font-weight: bold; }
+
+    /* 答案格子 */
+    .slots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      min-height: 64px;
+    }
+    .slot {
+      width: 54px;
+      height: 60px;
+      border-radius: 12px;
+      border: 2px dashed #f8bbd0;
+      background: #fff8fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .slot.over { border-color: #e91e8c; background: #fce4ec; }
+
+    /* 字母卡托盤 */
+    .tray {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      min-height: 64px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      background: #fff5f9;
+      border: 1px solid #fbdbe9;
+    }
+    .tray.over { background: #fce4ec; }
+
+    /* 托盤裡每個字母的固定座位：拿走一顆不會讓其他字母跑位 */
+    .holder {
+      width: 54px;
+      height: 60px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .holder.over { background: #fce4ec; }
+
+    /* 字母卡 */
+    .tile {
+      width: 54px;
+      height: 60px;
+      border-radius: 12px;
+      border: none;
+      background: #e91e8c;
+      color: #fff;
+      font-size: 1.7rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      box-shadow: 0 3px 8px rgba(233, 30, 140, 0.28);
+      touch-action: none;
+    }
+    .tile.dragging {
+      cursor: grabbing;
+      opacity: 0.92;
+      transform: scale(1.08);
+      box-shadow: 0 8px 18px rgba(233, 30, 140, 0.4);
+      pointer-events: none;
+    }
+
+    .slots.correct .slot { border-color: #2e7d32; background: #e8f5e9; }
+    .slots.correct .tile { background: #2e7d32; box-shadow: 0 3px 8px rgba(46,125,50,0.3); }
+    .slots.wrong { animation: shake 0.35s; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .message { font-size: 1.1rem; min-height: 1.5rem; text-align: center; font-weight: bold; }
+    .message.win { color: #2e7d32; }
+
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    button {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: none;
+      background: #e91e8c;
+      color: #fff;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #c2185b; }
+    button.ghost { background: transparent; border: 1px solid #e91e8c; color: #e91e8c; }
+    button.ghost:hover { background: #fce4ec; }
+
+    a.back { font-size: 0.85rem; color: #bbb; text-decoration: none; }
+    a.back:hover { color: #999; }
+  </style>
+</head>
+<body>
+  <h1>🔤 拼字大挑戰</h1>
+  <p class="subtitle">按 🔊 聽發音，拖曳字母卡拼出正確的英文單字</p>
+
+  <div class="game-box">
+    <div class="status">
+      <div>第 <span id="index">1</span> / <span id="total">0</span> 題</div>
+      <div>答對 <span id="score">0</span></div>
+    </div>
+
+    <div class="slots" id="slots"></div>
+    <div class="tray" id="tray"></div>
+
+    <div class="message" id="message"></div>
+
+    <div class="controls">
+      <button onclick="speakWord()">🔊 念一次</button>
+      <button onclick="checkAnswer()">檢查</button>
+      <button class="ghost" onclick="resetWord()">重來</button>
+      <button class="ghost" onclick="nextWord()">下一題 →</button>
+    </div>
+  </div>
+
+  <a class="back" href="index.html">← 回遊戲列表</a>
+
+  <script>
+    const DEFAULT_WORDS = ['globe', 'apple', 'tiger', 'water', 'music', 'happy'];
+
+    let words = [];
+    let current = '';
+    let order = [];       // 目前題目的出題順序（用來輪流出題）
+    let queueIndex = 0;
+    let score = 0;
+    let solved = false;
+    let voice = null;
+
+    const slotsEl = document.getElementById('slots');
+    const trayEl = document.getElementById('tray');
+    const messageEl = document.getElementById('message');
+
+    // ---- 載入題庫 ----
+    async function loadWords() {
+      try {
+        const res = await fetch('words.txt?_=' + Date.now());
+        if (!res.ok) throw new Error('fetch failed');
+        const text = await res.text();
+        words = text.split(/\r?\n/)
+          .map(w => w.trim())
+          .filter(w => w && !w.startsWith('#'))
+          .map(w => w.toLowerCase())
+          .filter(w => /^[a-z]+$/.test(w));
+      } catch (e) {
+        words = [];
+      }
+      if (words.length === 0) words = DEFAULT_WORDS.slice();
+      document.getElementById('total').textContent = words.length;
+      order = shuffle([...Array(words.length).keys()]);
+      queueIndex = 0;
+      loadWord();
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function loadWord() {
+      solved = false;
+      current = words[order[queueIndex]];
+      document.getElementById('index').textContent = queueIndex + 1;
+      messageEl.textContent = '';
+      messageEl.className = 'message';
+      slotsEl.className = 'slots';
+
+      // 建立空格子
+      slotsEl.innerHTML = '';
+      for (let i = 0; i < current.length; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.dataset.pos = i;
+        slotsEl.appendChild(slot);
+      }
+
+      // 建立打亂的字母卡（確保與原字不同順序）
+      let letters = current.split('');
+      let scrambled = shuffle([...letters]);
+      if (current.length > 1) {
+        while (scrambled.join('') === current) scrambled = shuffle([...letters]);
+      }
+      trayEl.innerHTML = '';
+      scrambled.forEach(ch => {
+        const holder = document.createElement('div');
+        holder.className = 'holder';
+        holder.appendChild(makeTile(ch));
+        trayEl.appendChild(holder);
+      });
+
+      speakWord();
+    }
+
+    // ---- 發音（Web Speech API）----
+    // 自動挑選裝置上音質最好的英文語音
+    function pickBestVoice() {
+      if (!('speechSynthesis' in window)) return;
+      const vs = window.speechSynthesis.getVoices().filter(v => /^en(-|_|$)/i.test(v.lang));
+      if (!vs.length) return;
+      const score = v => {
+        const n = v.name.toLowerCase();
+        let s = 0;
+        if (/natural|neural|premium|enhanced/.test(n)) s += 60; // 高品質神經語音
+        if (n.includes('google')) s += 40;                       // Chrome 的 Google 語音
+        if (/samantha|ava|allison|serena|siri|aaron|nicky|zoe/.test(n)) s += 30; // Apple 較自然的語音
+        if (v.lang.toLowerCase() === 'en-us') s += 10;
+        else if (v.lang.toLowerCase() === 'en-gb') s += 6;
+        if (v.default) s += 1;
+        return s;
+      };
+      voice = vs.sort((a, b) => score(b) - score(a))[0] || null;
+    }
+
+    function speakWord() {
+      if (!('speechSynthesis' in window) || !current) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(current);
+      if (voice) { u.voice = voice; u.lang = voice.lang; }
+      else u.lang = 'en-US';
+      u.rate = 0.85;
+      window.speechSynthesis.speak(u);
+    }
+
+    if ('speechSynthesis' in window) {
+      pickBestVoice();
+      window.speechSynthesis.onvoiceschanged = pickBestVoice; // 語音清單非同步載入時再挑一次
+    }
+
+    function makeTile(ch) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.textContent = ch;
+      tile.addEventListener('pointerdown', startDrag);
+      return tile;
+    }
+
+    // ---- 拖曳（支援滑鼠與觸控，最近的格子會自動吸附）----
+    let drag = null;
+
+    function startDrag(e) {
+      if (solved) return;
+      abortDrag(); // 保險：清掉任何殘留的拖曳狀態
+      const tile = e.currentTarget;
+      const rect = tile.getBoundingClientRect();
+      // 建立跟著手指的「分身」，原字卡留在原位（隱形佔位）→ 其他字卡不會跳動
+      const clone = tile.cloneNode(true);
+      clone.classList.add('dragging');
+      clone.style.position = 'fixed';
+      clone.style.margin = '0';
+      clone.style.left = rect.left + 'px';
+      clone.style.top = rect.top + 'px';
+      clone.style.width = rect.width + 'px';
+      clone.style.height = rect.height + 'px';
+      clone.style.zIndex = 1000;
+      document.body.appendChild(clone);
+      tile.style.visibility = 'hidden';
+
+      const rectOf = el => ({ el, r: el.getBoundingClientRect() });
+      drag = {
+        tile, clone,
+        origin: tile.parentElement, // 來源座位（答案格或托盤座位）
+        dx: e.clientX - rect.left,
+        dy: e.clientY - rect.top,
+        w: rect.width,
+        h: rect.height,
+        // 分開快取：答案格與托盤座位（判定時答案格優先，比較好把字放進格子）
+        slots: [...slotsEl.querySelectorAll('.slot')].map(rectOf),
+        holders: [...trayEl.querySelectorAll('.holder')].map(rectOf),
+        // 吸附半徑：約 1.8 個格子大小
+        snap: Math.max(rect.width, rect.height) * 1.8,
+      };
+      drag.pointerId = e.pointerId;
+      moveTile(e.clientX, e.clientY);
+      // 監聽掛在 window：不論放開時游標在哪，都一定收得到（避免卡在半空）
+      window.addEventListener('pointermove', onDrag);
+      window.addEventListener('pointerup', endDrag);
+      window.addEventListener('pointercancel', endDrag);
+      e.preventDefault();
+    }
+
+    // 清掉殘留拖曳狀態：移除分身、還原原卡、拿掉監聽，字卡放回原座位
+    function abortDrag() {
+      if (!drag) return;
+      if (drag.clone) drag.clone.remove();
+      drag.tile.style.visibility = '';
+      drag.origin.appendChild(drag.tile);
+      window.removeEventListener('pointermove', onDrag);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+      drag = null;
+    }
+
+    function moveTile(x, y) {
+      drag.clone.style.left = (x - drag.dx) + 'px';
+      drag.clone.style.top = (y - drag.dy) + 'px';
+    }
+
+    // 卡片與座位的重疊面積
+    function overlapArea(rect, r) {
+      const ox = Math.max(0, Math.min(rect.right, r.left + r.width) - Math.max(rect.left, r.left));
+      const oy = Math.max(0, Math.min(rect.bottom, r.top + r.height) - Math.max(rect.top, r.top));
+      return ox * oy;
+    }
+    function bestOverlap(list, rect) {
+      let best = null, bestA = 0;
+      for (const c of list) {
+        const a = overlapArea(rect, c.r);
+        if (a > bestA) { bestA = a; best = c.el; }
+      }
+      return best;
+    }
+    function nearestWithin(list, cx, cy, max) {
+      let best = null, bestD = Infinity;
+      for (const c of list) {
+        const d = Math.hypot(cx - (c.r.left + c.r.width / 2), cy - (c.r.top + c.r.height / 2));
+        if (d < bestD) { bestD = d; best = c.el; }
+      }
+      return (best && bestD <= max) ? best : null;
+    }
+
+    // 以卡片「實際覆蓋」哪個座位來判定：碰到答案格就進答案格；碰到托盤座位就回該座位；
+    // 完全沒碰到才用中心距離找最近的，仍找不到就放回原位。
+    function dropTarget(px, py) {
+      const rect = { left: px - drag.dx, top: py - drag.dy, right: px - drag.dx + drag.w, bottom: py - drag.dy + drag.h };
+      return bestOverlap(drag.slots, rect)
+        || bestOverlap(drag.holders, rect)
+        || nearestWithin(drag.slots, rect.left + drag.w / 2, rect.top + drag.h / 2, drag.snap);
+    }
+
+    function clearOver() {
+      drag.slots.forEach(c => c.el.classList.remove('over'));
+      drag.holders.forEach(c => c.el.classList.remove('over'));
+    }
+
+    function onDrag(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      moveTile(e.clientX, e.clientY);
+      const cell = dropTarget(e.clientX, e.clientY);
+      clearOver();
+      if (cell) cell.classList.add('over');
+    }
+
+    function endDrag(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      const { tile, clone } = drag;
+      const cell = dropTarget(e.clientX, e.clientY);
+
+      clearOver();
+      clone.remove();
+      tile.style.visibility = '';
+      window.removeEventListener('pointermove', onDrag);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+
+      const target = cell || drag.origin;
+      if (target !== drag.origin) {
+        // 目標座位已被佔用 → 把原本的字卡換到拖曳來源座位（形成交換）
+        const occupant = target.querySelector('.tile');
+        if (occupant) drag.origin.appendChild(occupant);
+        target.appendChild(tile);
+      } else {
+        drag.origin.appendChild(tile); // 放回原座位
+      }
+
+      drag = null;
+      autoCheck();
+    }
+
+    // ---- 檢查答案 ----
+    function currentGuess() {
+      return [...slotsEl.querySelectorAll('.slot')]
+        .map(s => { const t = s.querySelector('.tile'); return t ? t.textContent : null; });
+    }
+
+    function autoCheck() {
+      const guess = currentGuess();
+      if (guess.every(x => x !== null)) checkAnswer();
+    }
+
+    function checkAnswer() {
+      const guess = currentGuess();
+      if (guess.some(x => x === null)) {
+        messageEl.textContent = '還有空格喔！';
+        messageEl.className = 'message';
+        return;
+      }
+      if (guess.join('') === current) {
+        solved = true;
+        slotsEl.className = 'slots correct';
+        messageEl.textContent = '🎉 拼對了！';
+        messageEl.className = 'message win';
+        score++;
+        document.getElementById('score').textContent = score;
+      } else {
+        slotsEl.classList.remove('wrong');
+        void slotsEl.offsetWidth; // 重新觸發動畫
+        slotsEl.classList.add('wrong');
+        messageEl.textContent = '再試試看 💪';
+        messageEl.className = 'message';
+      }
+    }
+
+    // 重來：把所有字母（含已放進格子的）清空、重新洗牌回到下面托盤
+    function resetWord() {
+      if (solved) return;
+      const tiles = shuffle([...slotsEl.querySelectorAll('.tile'), ...trayEl.querySelectorAll('.tile')]);
+      slotsEl.querySelectorAll('.slot').forEach(s => { s.innerHTML = ''; });
+      const holders = [...trayEl.querySelectorAll('.holder')];
+      holders.forEach(h => { h.innerHTML = ''; });
+      holders.forEach((h, i) => { if (tiles[i]) h.appendChild(tiles[i]); });
+      slotsEl.className = 'slots';
+      messageEl.textContent = '';
+      messageEl.className = 'message';
+    }
+
+    function nextWord() {
+      queueIndex = (queueIndex + 1) % words.length;
+      if (queueIndex === 0) order = shuffle(order); // 一輪結束後重新打亂
+      loadWord();
+    }
+
+    loadWords();
+  </script>
+</body>
+</html>

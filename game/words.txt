@@ -1,0 +1,14 @@
+# 拼字大挑戰題庫
+# 每行一個英文單字，# 開頭的行會被忽略。
+# 新增題目：直接在下面加一行英文單字即可。
+globe
+computer
+pen
+pencil
+book
+notebook
+board
+marker
+desk
+chair
+
