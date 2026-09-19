@@ -104,7 +104,7 @@
       color: #fff;
       font-size: 1.7rem;
       font-weight: bold;
-      text-transform: uppercase;
+      text-transform: lowercase;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -293,19 +293,44 @@
       const tile = document.createElement('div');
       tile.className = 'tile';
       tile.textContent = ch;
-      tile.addEventListener('pointerdown', startDrag);
+      tile.addEventListener('pointerdown', onPointerDown);
       return tile;
     }
 
-    // ---- 拖曳（支援滑鼠與觸控，最近的格子會自動吸附）----
+    // ---- 互動：點一下自動歸位；按住 / 拖動才進入拖曳 ----
     let drag = null;
+    const MOVE_THRESHOLD = 6;   // 移動超過此距離(px)視為拖曳
+    const HOLD_MS = 200;        // 按住超過此時間(ms)視為拖曳
 
-    function startDrag(e) {
+    function onPointerDown(e) {
       if (solved) return;
-      abortDrag(); // 保險：清掉任何殘留的拖曳狀態
+      abortDrag(); // 保險：清掉任何殘留狀態
       const tile = e.currentTarget;
       const rect = tile.getBoundingClientRect();
-      // 建立跟著手指的「分身」，原字卡留在原位（隱形佔位）→ 其他字卡不會跳動
+      drag = {
+        tile,
+        origin: tile.parentElement,
+        pointerId: e.pointerId,
+        startX: e.clientX, startY: e.clientY,
+        lastX: e.clientX, lastY: e.clientY,
+        dx: e.clientX - rect.left,
+        dy: e.clientY - rect.top,
+        w: rect.width, h: rect.height, startRect: rect,
+        active: false, clone: null,
+      };
+      // 按住不放超過 HOLD_MS 也進入拖曳（即使沒移動）
+      drag.holdTimer = setTimeout(activateDrag, HOLD_MS);
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+      e.preventDefault();
+    }
+
+    // 真正開始拖曳：建立跟著手指的分身，原卡隱形佔位（其他字卡不跳動）
+    function activateDrag() {
+      if (!drag || drag.active) return;
+      clearTimeout(drag.holdTimer);
+      const { tile, startRect: rect } = drag;
       const clone = tile.cloneNode(true);
       clone.classList.add('dragging');
       clone.style.position = 'fixed';
@@ -319,37 +344,24 @@
       tile.style.visibility = 'hidden';
 
       const rectOf = el => ({ el, r: el.getBoundingClientRect() });
-      drag = {
-        tile, clone,
-        origin: tile.parentElement, // 來源座位（答案格或托盤座位）
-        dx: e.clientX - rect.left,
-        dy: e.clientY - rect.top,
-        w: rect.width,
-        h: rect.height,
-        // 分開快取：答案格與托盤座位（判定時答案格優先，比較好把字放進格子）
-        slots: [...slotsEl.querySelectorAll('.slot')].map(rectOf),
-        holders: [...trayEl.querySelectorAll('.holder')].map(rectOf),
-        // 吸附半徑：約 1.8 個格子大小
-        snap: Math.max(rect.width, rect.height) * 1.8,
-      };
-      drag.pointerId = e.pointerId;
-      moveTile(e.clientX, e.clientY);
-      // 監聽掛在 window：不論放開時游標在哪，都一定收得到（避免卡在半空）
-      window.addEventListener('pointermove', onDrag);
-      window.addEventListener('pointerup', endDrag);
-      window.addEventListener('pointercancel', endDrag);
-      e.preventDefault();
+      drag.clone = clone;
+      drag.slots = [...slotsEl.querySelectorAll('.slot')].map(rectOf);
+      drag.holders = [...trayEl.querySelectorAll('.holder')].map(rectOf);
+      drag.snap = Math.max(rect.width, rect.height) * 1.8;
+      drag.active = true;
+      moveTile(drag.lastX, drag.lastY);
     }
 
-    // 清掉殘留拖曳狀態：移除分身、還原原卡、拿掉監聽，字卡放回原座位
+    // 清掉殘留狀態：移除分身、還原原卡、拿掉監聽
     function abortDrag() {
       if (!drag) return;
+      clearTimeout(drag.holdTimer);
       if (drag.clone) drag.clone.remove();
       drag.tile.style.visibility = '';
-      drag.origin.appendChild(drag.tile);
-      window.removeEventListener('pointermove', onDrag);
-      window.removeEventListener('pointerup', endDrag);
-      window.removeEventListener('pointercancel', endDrag);
+      if (drag.active) drag.origin.appendChild(drag.tile);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
       drag = null;
     }
 
@@ -395,38 +407,65 @@
       drag.holders.forEach(c => c.el.classList.remove('over'));
     }
 
-    function onDrag(e) {
+    function onPointerMove(e) {
       if (!drag || e.pointerId !== drag.pointerId) return;
+      drag.lastX = e.clientX;
+      drag.lastY = e.clientY;
+      if (!drag.active) {
+        // 移動超過門檻才啟動拖曳，否則維持「待定」（可能是點一下）
+        if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > MOVE_THRESHOLD) activateDrag();
+        else return;
+      }
       moveTile(e.clientX, e.clientY);
       const cell = dropTarget(e.clientX, e.clientY);
       clearOver();
       if (cell) cell.classList.add('over');
     }
 
-    function endDrag(e) {
+    function onPointerUp(e) {
       if (!drag || e.pointerId !== drag.pointerId) return;
-      const { tile, clone } = drag;
-      const cell = dropTarget(e.clientX, e.clientY);
+      clearTimeout(drag.holdTimer);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
 
-      clearOver();
-      clone.remove();
-      tile.style.visibility = '';
-      window.removeEventListener('pointermove', onDrag);
-      window.removeEventListener('pointerup', endDrag);
-      window.removeEventListener('pointercancel', endDrag);
+      if (drag.active) {
+        // 拖曳結束：用重疊面積決定落點
+        const { tile } = drag;
+        const target = dropTarget(e.clientX, e.clientY) || drag.origin;
+        clearOver();
+        drag.clone.remove();
+        tile.style.visibility = '';
+        placeInto(tile, target, drag.origin);
+        drag = null;
+      } else {
+        // 點一下：自動歸位
+        const { tile, origin } = drag;
+        drag = null;
+        handleTap(tile, origin);
+      }
+      autoCheck();
+    }
 
-      const target = cell || drag.origin;
-      if (target !== drag.origin) {
-        // 目標座位已被佔用 → 把原本的字卡換到拖曳來源座位（形成交換）
+    // 放置（含交換）：把 tile 放進 target；target 原本有字卡則換回 origin
+    function placeInto(tile, target, origin) {
+      if (target !== origin) {
         const occupant = target.querySelector('.tile');
-        if (occupant) drag.origin.appendChild(occupant);
+        if (occupant) origin.appendChild(occupant);
         target.appendChild(tile);
       } else {
-        drag.origin.appendChild(tile); // 放回原座位
+        origin.appendChild(tile);
       }
+    }
 
-      drag = null;
-      autoCheck();
+    // 點一下：托盤字卡 → 跳到第一個空的答案格；答案格字卡 → 跳回第一個空的托盤座位
+    function handleTap(tile, origin) {
+      const firstEmpty = (container, sel) =>
+        [...container.querySelectorAll(sel)].find(c => !c.querySelector('.tile')) || null;
+      const target = origin.classList.contains('slot')
+        ? firstEmpty(trayEl, '.holder')
+        : firstEmpty(slotsEl, '.slot');
+      if (target) target.appendChild(tile);
     }
 
     // ---- 檢查答案 ----
