@@ -43,7 +43,7 @@
     .equation-card {position:absolute;top:77px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:11px;padding:11px 17px;background:#fffdf7e8;border:1px solid #ffffff;border-radius:19px;box-shadow:0 8px 24px #42543c19;white-space:nowrap;z-index:5;}
     .equation-card .num {min-width:38px;text-align:center;font-size:clamp(23px,4vw,35px);font-weight:950;letter-spacing:-.06em;font-variant-numeric:tabular-nums;}
     .equation-card .minus {font-size:22px;color:#a2aa9c;font-weight:600;}
-    .equation-card .blank {min-width:53px;height:48px;padding:0 5px;border:2px dashed #a3bb88;border-radius:12px;background:#f6faee;color:var(--green);text-align:center;font-size:28px;font-weight:900;outline:none;transition:.18s;}
+    .equation-card .blank {width:48px;min-width:48px;height:48px;padding:0 3px;border:2px dashed #a3bb88;border-radius:12px;background:#f6faee;color:var(--green);text-align:center;font-size:28px;font-weight:900;outline:none;transition:.18s;}
     .equation-card .blank:focus {border-style:solid;border-color:#67924f;box-shadow:0 0 0 4px #9ac78042;}
     .equation-card .blank:disabled {background:#eaf2dd;border-style:solid;}
     .feedback {position:absolute;top:186px;left:50%;transform:translateX(-50%);padding:6px 12px;border-radius:999px;background:#fffdf2;color:#486c3d;font-size:13px;font-weight:850;white-space:nowrap;z-index:8;opacity:0;transition:opacity .2s;}
@@ -135,6 +135,14 @@
       .keypad-grid .keypad-zero{grid-column:2}
       .keypad-grid .keypad-action{font-size:17px;background:#f1f1e8;color:#697363}
       .keypad-hint{margin:0;color:#879080;text-align:center;font-size:11px}
+    }
+    @media(min-width:621px) and (orientation:portrait){
+      .playfield{height:clamp(460px,70vw,560px)}
+      .equation-card .blank{width:46px;min-width:46px}
+    }
+    @media(max-width:620px) and (orientation:portrait){
+      .playfield{height:clamp(390px,110vw,460px);min-height:390px}
+      .equation-card .blank{width:44px;min-width:44px}
     }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
