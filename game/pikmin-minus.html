@@ -37,8 +37,8 @@
     .monster-wrap {position:absolute;left:50%;bottom:69px;transform:translateX(-50%);width:clamp(154px,21vw,215px);height:205px;display:flex;align-items:flex-end;justify-content:center;z-index:3;transition:transform .75s cubic-bezier(.2,.8,.2,1),filter .5s;}
     .monster {max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 12px 5px #43502e2b);transition:transform .7s cubic-bezier(.2,.8,.2,1),filter .6s;transform-origin:50% 100%;}
     .monster-number {position:absolute;top:3px;right:-11px;min-width:46px;height:46px;padding:0 9px;display:grid;place-items:center;background:#fffdf2;border:3px solid #f0c962;border-radius:50%;font-weight:950;font-size:22px;color:#965b31;box-shadow:0 3px 0 #c68b39;transition:opacity .3s;}
-    .crew {position:absolute;left:50%;bottom:190px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center;gap:2px;width:min(calc(100vw - 36px),460px);height:100px;z-index:4;pointer-events:none;transition:bottom .45s ease;}
-    .pikmin {width:clamp(29px,4.4vw,46px);height:clamp(44px,7.3vw,75px);object-fit:contain;filter:drop-shadow(0 4px 2px #27351e35);animation:bob 1.8s ease-in-out infinite;animation-delay:calc(var(--i)*-0.13s);transition:transform .8s cubic-bezier(.18,.8,.25,1),opacity .5s;}
+    .crew {position:absolute;left:50%;bottom:90px;transform:translateX(-50%);display:block;width:min(calc(100vw - 36px),470px);height:205px;z-index:4;pointer-events:none;transition:bottom .45s ease;}
+    .pikmin {position:absolute;width:clamp(46px,5.5vw,62px);height:clamp(68px,8vw,96px);object-fit:contain;filter:drop-shadow(0 4px 2px #27351e35);animation:bob 1.8s ease-in-out infinite;animation-delay:calc(var(--i)*-0.13s);transition:transform .8s cubic-bezier(.18,.8,.25,1),opacity .5s;}
     @keyframes bob {0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
     .equation-card {position:absolute;top:77px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:11px;padding:11px 17px;background:#fffdf7e8;border:1px solid #ffffff;border-radius:19px;box-shadow:0 8px 24px #42543c19;white-space:nowrap;z-index:5;}
     .equation-card .num {min-width:38px;text-align:center;font-size:clamp(23px,4vw,35px);font-weight:950;letter-spacing:-.06em;font-variant-numeric:tabular-nums;}
@@ -54,7 +54,7 @@
     .run .monster-number {opacity:0;}
     .run .ground {background:linear-gradient(#8ca963,#79934e)}
     .wrong-state .crew {bottom:79px;}
-    .wrong-state .pikmin {animation:none;transform:rotate(90deg);transform-origin:center;}
+    .wrong-state .pikmin {animation:none;left:var(--ground-x)!important;top:calc(100% - 68px)!important;transform:translateY(14px) rotate(90deg);transform-origin:center;}
     .keypad {display:none;}
     .controls {display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:18px 21px 20px;background:#fffdf8;}
     .left-controls {display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
@@ -88,9 +88,9 @@
       .equation-card .blank{min-width:48px;width:52px;height:46px;font-size:26px}
       .feedback{top:158px;max-width:92%;text-align:center}
       .monster-wrap{bottom:58px;width:clamp(145px,44vw,175px);height:175px}
-      .crew{bottom:184px;gap:0;width:calc(100vw - 36px);height:86px}
+      .crew{bottom:68px;width:calc(100vw - 30px);height:180px}
       .wrong-state .crew{bottom:68px}
-      .pikmin{width:clamp(25px,8vw,31px);height:51px;flex-shrink:1}
+      .pikmin{width:clamp(39px,12vw,52px);height:clamp(58px,17vw,76px)}
       .ground{height:68px}
       .flower{bottom:65px}.f2,.f4{bottom:69px}
       .controls{grid-template-columns:1fr;padding:14px 10px 16px;gap:13px}
@@ -193,6 +193,13 @@
         const img = document.createElement('img');
         img.src = 'assets/pikmin.webp'; img.alt = i === 0 ? `${count} 隻皮克敏` : '';
         img.className = 'pikmin'; img.style.setProperty('--i', i);
+        const angle = (i / count) * Math.PI * 2 + (Math.random() - .5) * .6;
+        const radius = .28 + Math.random() * .58;
+        const x = Math.max(3, Math.min(82, 50 + Math.cos(angle) * 46 * radius));
+        const y = 8 + Math.random() * 40;
+        const groundX = count === 1 ? 42 : 4 + (i / (count - 1)) * 82;
+        img.style.left = `${x}%`; img.style.top = `${y}%`;
+        img.style.setProperty('--ground-x', `${groundX}%`);
         crew.append(img);
       }
     }
