@@ -38,7 +38,7 @@
     .monster {max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 12px 5px #43502e2b);transition:transform .7s cubic-bezier(.2,.8,.2,1),filter .6s;transform-origin:50% 100%;}
     .monster-number {position:absolute;top:3px;right:-11px;min-width:46px;height:46px;padding:0 9px;display:grid;place-items:center;background:#fffdf2;border:3px solid #f0c962;border-radius:50%;font-weight:950;font-size:22px;color:#965b31;box-shadow:0 3px 0 #c68b39;transition:opacity .3s;}
     .crew {position:absolute;left:50%;bottom:90px;transform:translateX(-50%);display:block;width:min(calc(100vw - 36px),470px);height:205px;z-index:4;pointer-events:none;transition:bottom .45s ease;}
-    .pikmin {position:absolute;width:clamp(46px,5.5vw,62px);height:clamp(68px,8vw,96px);object-fit:contain;filter:drop-shadow(0 4px 2px #27351e35);animation:bob 1.8s ease-in-out infinite;animation-delay:calc(var(--i)*-0.13s);transition:transform .8s cubic-bezier(.18,.8,.25,1),opacity .5s;}
+    .pikmin {position:absolute;width:clamp(58px,7vw,78px);height:clamp(82px,10vw,115px);object-fit:contain;filter:drop-shadow(0 4px 2px #27351e35);animation:bob 1.8s ease-in-out infinite;animation-delay:calc(var(--i)*-0.13s);transition:transform .8s cubic-bezier(.18,.8,.25,1),opacity .5s;}
     @keyframes bob {0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
     .equation-card {position:absolute;top:77px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:11px;padding:11px 17px;background:#fffdf7e8;border:1px solid #ffffff;border-radius:19px;box-shadow:0 8px 24px #42543c19;white-space:nowrap;z-index:5;}
     .equation-card .num {min-width:38px;text-align:center;font-size:clamp(23px,4vw,35px);font-weight:950;letter-spacing:-.06em;font-variant-numeric:tabular-nums;}
@@ -59,12 +59,27 @@
     .controls {display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:18px 21px 20px;background:#fffdf8;}
     .left-controls {display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
     .target-control {display:flex;align-items:center;gap:8px;color:#667166;font-size:13px;font-weight:750;}
-    .type-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:#667166;font-size:12px;font-weight:750;}
-    .type-picker-title {margin-right:2px;}
-    .type-choices {display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-    .type-option {display:flex;align-items:center;gap:5px;padding:8px 9px;border:1px solid #e1e2d7;border-radius:11px;background:#fffdf8;color:#6d776a;font-size:12px;font-weight:750;cursor:pointer;}
-    .type-option input {accent-color:#64884f;}
-    .type-option input:disabled {opacity:.55;}
+    .type-picker {display:flex;align-items:center;gap:7px;color:#667166;font-size:12px;font-weight:750;}
+    .type-picker-title {margin-right:1px;}
+    .type-picker-button {display:flex;align-items:center;gap:8px;min-height:42px;padding:6px 11px;border:1px solid #e1e2d7;border-radius:12px;background:#fffdf8;color:#596653;font-size:12px;font-weight:800;cursor:pointer;}
+    .type-picker-button:hover {border-color:#b8c9a8;background:#f8faef;}
+    .type-picker-icons {display:flex;align-items:center;}
+    .type-picker-icons img {width:25px;height:28px;object-fit:contain;margin-left:-4px;}
+    .type-picker-icons img:first-child {margin-left:0;}
+    .type-dialog {width:min(440px,calc(100% - 28px));padding:0;border:1px solid #d9ddc9;border-radius:22px;background:#fffdf8;color:var(--ink);box-shadow:0 24px 70px #24351f45;}
+    .type-dialog::backdrop {background:#20301f70;backdrop-filter:blur(3px);}
+    .type-dialog-inner {padding:21px;}
+    .type-dialog-header {display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:8px;}
+    .type-dialog h2 {margin:0;color:#38583a;font-size:20px;}
+    .type-dialog-description {margin:0 0 17px;color:#778276;font-size:13px;}
+    .type-dialog-close {width:36px;height:36px;border:0;border-radius:50%;background:#f0f1e8;color:#5f6c5b;font-size:21px;cursor:pointer;}
+    .type-options {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .type-option {position:relative;display:flex;align-items:center;gap:10px;min-height:82px;padding:10px;border:2px solid #e1e5d9;border-radius:15px;background:#fff;color:#596653;font-size:14px;font-weight:800;cursor:pointer;}
+    .type-option:has(input:checked) {border-color:#83a86d;background:#f4f8ed;box-shadow:0 0 0 2px #83a86d24;}
+    .type-option input {width:18px;height:18px;margin-left:auto;accent-color:#64884f;}
+    .type-option img {width:43px;height:59px;object-fit:contain;}
+    .type-dialog-footer {display:flex;justify-content:flex-end;margin-top:17px;}
+    .type-dialog-done {min-width:105px;height:42px;border:0;border-radius:12px;background:#537a4c;color:white;font-weight:850;cursor:pointer;}
     .target-input {width:69px;height:40px;padding:0 8px;border:1px solid #dcded1;border-radius:11px;background:#f8f8f1;color:var(--ink);text-align:center;font-weight:850;outline:none;}
     .target-input:focus {border-color:#8caa75;box-shadow:0 0 0 3px #b7cf9d55;}
     .toggle {display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid #e1e2d7;border-radius:11px;color:#6d776a;font-size:12px;font-weight:750;cursor:pointer;}
@@ -96,7 +111,7 @@
       .monster-wrap{bottom:58px;width:clamp(145px,44vw,175px);height:175px}
       .crew{bottom:68px;width:calc(100vw - 30px);height:180px}
       .wrong-state .crew{bottom:68px}
-      .pikmin{width:clamp(39px,12vw,52px);height:clamp(58px,17vw,76px)}
+      .pikmin{width:clamp(48px,14vw,62px);height:clamp(70px,20vw,88px)}
       .ground{height:68px}
       .flower{bottom:65px}.f2,.f4{bottom:69px}
       .controls{grid-template-columns:1fr;padding:14px 10px 16px;gap:13px}
@@ -150,12 +165,20 @@
       <div class="controls">
         <div class="left-controls">
           <label class="target-control" for="targetInput">怪物數字 <input id="targetInput" class="target-input" type="number" inputmode="numeric" enterkeyhint="done" min="2" max="30" value="10" aria-label="自訂怪物數字" /></label>
-          <div class="type-picker" role="group" aria-label="皮克敏顏色選擇"><span class="type-picker-title">皮克敏</span><div id="pikminTypeChoices" class="type-choices"></div><label class="type-option"><input id="randomPikminMix" type="checkbox" /> 全部隨機</label></div>
+          <div class="type-picker"><span class="type-picker-title">皮克敏</span><button id="openTypePicker" class="type-picker-button" type="button" aria-haspopup="dialog" aria-controls="typeDialog"><span id="selectedTypeIcons" class="type-picker-icons" aria-hidden="true"></span><span id="selectedTypeSummary">全部型態</span><span aria-hidden="true">⌄</span></button></div>
           <label class="toggle"><input id="randomTarget" type="checkbox" /> 每題隨機數字（≤10）</label>
           <label class="toggle"><input id="autoNext" type="checkbox" checked /> 答對自動下一題</label>
         </div>
         <div class="buttons"><button id="newQuestion" class="btn btn-secondary" type="button">換一題 ↻</button><button id="checkAnswer" class="btn btn-primary" type="button">送出答案</button></div>
       </div>
+      <dialog id="typeDialog" class="type-dialog" aria-labelledby="typeDialogTitle">
+        <div class="type-dialog-inner">
+          <div class="type-dialog-header"><h2 id="typeDialogTitle">選擇皮克敏</h2><button id="closeTypePicker" class="type-dialog-close" type="button" aria-label="關閉">×</button></div>
+          <p class="type-dialog-description">勾選想出現的型態；選多種時會隨機混合。</p>
+          <div id="pikminTypeChoices" class="type-options"></div>
+          <div class="type-dialog-footer"><button id="doneTypePicker" class="type-dialog-done" type="button">完成</button></div>
+        </div>
+      </dialog>
       <aside class="keypad" id="keypad" aria-label="數字鍵盤" aria-hidden="true">
         <h2 class="keypad-title">數字鍵盤</h2>
         <div class="keypad-grid">
@@ -179,7 +202,7 @@
     const playfield = $('playfield');
     const keypad = $('keypad');
     const pikminTypeChoices = $('pikminTypeChoices');
-    const randomPikminMix = $('randomPikminMix');
+    const typeDialog = $('typeDialog');
     const keypadMedia = window.matchMedia('(min-width: 760px) and (any-pointer: coarse)');
     const PIKMIN_TYPES = [
       { id: 'red', name: '紅色', src: 'assets/pikmin.webp' },
@@ -218,19 +241,35 @@
         checkbox.value = type.id;
         checkbox.checked = true;
         checkbox.setAttribute('aria-label', `${type.name}皮克敏`);
-        label.append(checkbox, document.createTextNode(type.name));
+        const icon = document.createElement('img');
+        icon.src = type.src;
+        icon.alt = '';
+        label.append(icon, document.createTextNode(type.name), checkbox);
         pikminTypeChoices.append(label);
       });
+      updatePikminTypeSummary();
     }
 
     function getSelectedPikminTypes() {
-      if (randomPikminMix.checked) return PIKMIN_TYPES;
       const selectedIds = new Set([...pikminTypeChoices.querySelectorAll('input:checked')].map((input) => input.value));
       return PIKMIN_TYPES.filter((type) => selectedIds.has(type.id));
     }
 
-    function refreshPikminTypeMode() {
-      pikminTypeChoices.querySelectorAll('input').forEach((input) => { input.disabled = randomPikminMix.checked; });
+    function updatePikminTypeSummary() {
+      const selected = getSelectedPikminTypes();
+      const icons = $('selectedTypeIcons');
+      icons.replaceChildren();
+      selected.forEach((type) => {
+        const icon = document.createElement('img');
+        icon.src = type.src;
+        icon.alt = '';
+        icons.append(icon);
+      });
+      $('selectedTypeSummary').textContent = selected.length === PIKMIN_TYPES.length ? '全部型態' : selected.map((type) => type.name).join('、');
+    }
+
+    function refreshPikminTypes() {
+      updatePikminTypeSummary();
       drawPikmin(solved ? target : already);
     }
 
@@ -239,7 +278,7 @@
       const availableTypes = getSelectedPikminTypes();
       if (availableTypes.length === 0) return;
       const types = Array.from({length: count}, () => availableTypes[Math.floor(Math.random() * availableTypes.length)]);
-      if (!randomPikminMix.checked && count >= availableTypes.length) {
+      if (count >= availableTypes.length) {
         availableTypes.forEach((type, index) => { types[index] = type; });
         shuffle(types);
       }
@@ -336,9 +375,12 @@
         event.target.checked = true;
         return;
       }
-      refreshPikminTypeMode();
+      refreshPikminTypes();
     });
-    randomPikminMix.addEventListener('change', refreshPikminTypeMode);
+    $('openTypePicker').addEventListener('click', () => typeDialog.showModal());
+    $('closeTypePicker').addEventListener('click', () => typeDialog.close());
+    $('doneTypePicker').addEventListener('click', () => typeDialog.close());
+    typeDialog.addEventListener('click', (event) => { if (event.target === typeDialog) typeDialog.close(); });
     $('checkAnswer').addEventListener('click', submit);
     $('newQuestion').addEventListener('click', chooseTarget);
     answer.addEventListener('input', ()=>{
