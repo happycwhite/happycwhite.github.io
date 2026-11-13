@@ -172,6 +172,10 @@
     const playfield = $('playfield');
     const keypad = $('keypad');
     const keypadMedia = window.matchMedia('(min-width: 760px) and (any-pointer: coarse)');
+    const PIKMIN_TYPES = [
+      { id: 'red', name: '紅色', src: 'assets/pikmin.webp' },
+      { id: 'glow', name: '發光', src: 'assets/glow-pikmin-2x.webp' },
+    ];
     let target = 10;
     let already = 2;
     let solved = false;
@@ -187,11 +191,28 @@
     syncKeypadMode();
     keypadMedia.addEventListener('change', syncKeypadMode);
 
+    function shuffle(items) {
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+      return items;
+    }
+
     function drawPikmin(count) {
       crew.replaceChildren();
+      const types = Array.from({length: count}, () => PIKMIN_TYPES[Math.floor(Math.random() * PIKMIN_TYPES.length)]);
+      if (count >= PIKMIN_TYPES.length) {
+        PIKMIN_TYPES.forEach((type, index) => { types[index] = type; });
+        shuffle(types);
+      }
+      const presentTypes = [...new Set(types.map((type) => type.name))];
+      crew.setAttribute('aria-label', `${count} 隻皮克敏${presentTypes.length ? `：${presentTypes.join('、')}型態` : ''}`);
+
       for (let i = 0; i < count; i++) {
         const img = document.createElement('img');
-        img.src = 'assets/pikmin.webp'; img.alt = i === 0 ? `${count} 隻皮克敏` : '';
+        const type = types[i];
+        img.src = type.src; img.alt = ''; img.dataset.pikminType = type.id;
         img.className = 'pikmin'; img.style.setProperty('--i', i);
         const angle = (i / count) * Math.PI * 2 + (Math.random() - .5) * .6;
         const radius = .28 + Math.random() * .58;
