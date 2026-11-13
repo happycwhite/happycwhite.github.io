@@ -199,13 +199,19 @@
         solved = true; score++; $('score').textContent=score;
         playfield.classList.remove('wrong-state');
         feedback.textContent='答對了！皮克敏衝呀——'; feedback.className='feedback show';
-        answer.value = target - already; answer.disabled = true;
+        answer.value = target - already;
+        answer.disabled = !autoNext.checked;
         $('checkAnswer').textContent='再玩一題 →';
         drawPikmin(target);
         requestAnimationFrame(()=>playfield.classList.add('run'));
         sparkleBurst();
         if (autoNext.checked) {
-          setTimeout(() => { if (autoNext.checked && solved) chooseTarget(); }, 1500);
+          setTimeout(() => {
+            if (autoNext.checked && solved) {
+              chooseTarget();
+              requestAnimationFrame(() => answer.focus({preventScroll:true}));
+            }
+          }, 850);
         } else {
           requestAnimationFrame(()=>$('checkAnswer').focus({preventScroll:true}));
         }
@@ -223,7 +229,10 @@
     $('checkAnswer').addEventListener('click', submit);
     $('newQuestion').addEventListener('click', chooseTarget);
     answer.addEventListener('input', ()=>{
-      if (solved) return;
+      if (solved) {
+        answer.value = target - already;
+        return;
+      }
       const entered = answer.value.trim();
       const digitsNeeded = String(target - already).length;
       if (entered.length >= digitsNeeded && entered.length > 0) submit();
