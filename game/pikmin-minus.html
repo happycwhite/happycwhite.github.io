@@ -147,6 +147,31 @@
       .playfield{height:clamp(390px,110vw,460px);min-height:390px}
       .equation-card .blank{width:44px;min-width:44px}
     }
+    @media(orientation:landscape) and (max-height:620px){
+      .page{padding:10px 16px 18px}
+      header{margin-bottom:7px}
+      .brand{gap:8px}
+      .brand-mark{width:36px;height:36px;flex-basis:36px;font-size:21px}
+      .eyebrow{font-size:10px}
+      h1{font-size:clamp(18px,3vw,25px)}
+      .score{padding:6px 11px;font-size:13px}
+      .intro{margin-bottom:8px;font-size:12px}
+      .playfield{height:clamp(330px,72svh,420px);min-height:330px}
+      .scene-label{top:10px}
+      .equation-card{top:54px;gap:8px;padding:8px 12px}
+      .equation-card .num{min-width:34px;font-size:clamp(22px,3.5vw,30px)}
+      .equation-card .blank{width:44px;min-width:44px;height:43px;font-size:25px}
+      .feedback{top:112px}
+      .monster-wrap{bottom:42px;width:clamp(145px,18vw,185px);height:165px}
+      .crew{bottom:52px;height:165px}
+      .pikmin{width:clamp(48px,6vw,66px);height:clamp(68px,8vw,92px)}
+      .ground{height:56px}
+      .flower{bottom:52px}.f2,.f4{bottom:56px}
+      .controls{padding:12px 16px;gap:10px}
+      .left-controls{gap:7px}
+      .toggle{padding:7px 8px}
+      .btn{height:40px;padding:0 12px}
+    }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
 </head>
