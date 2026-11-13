@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f2e8" />
+  <meta name="description" content="帶著皮克敏練習減法，算出還差幾隻才能把怪物壓扁！" />
+  <title>皮克敏減法大作戰</title>
+  <style>
+    :root { color-scheme: light; --ink:#26362b; --green:#426b43; --leaf:#8cae70; --paper:#f5f2e8; --sun:#f0bd4f; --red:#e65545; --muted:#748074; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; color:var(--ink); background:radial-gradient(ellipse at 50% -15%,#fffdf7 0%,var(--paper) 57%,#e9eddb 100%); font-family:ui-rounded,"Noto Sans TC","PingFang TC",system-ui,sans-serif; }
+    button,input { font:inherit; }
+    .page { width:min(1080px,100%); margin:auto; padding:22px 24px 28px; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:18px; margin-bottom:17px; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-mark { width:47px;height:47px;display:grid;place-items:center;background:#dce9cb;border:2px solid #c6d7af;border-radius:16px;font-size:27px;transform:rotate(-5deg); }
+    .eyebrow { margin:0 0 2px; color:var(--green); font-weight:850; font-size:12px; letter-spacing:.15em; }
+    h1 { margin:0; font-size:clamp(21px,4vw,31px); line-height:1.12; letter-spacing:-.045em; }
+    .score { display:flex;align-items:center;gap:9px;padding:9px 15px;background:#fffdf8;border:1px solid #e8e2d4;border-radius:999px;font-weight:850;white-space:nowrap;box-shadow:0 3px 9px #4556310b; }
+    .score b { color:#c58a20;font-variant-numeric:tabular-nums; }
+    .intro { margin:0 0 16px 3px;color:#637064;font-size:14px; }
+    .game { overflow:hidden; position:relative; border:1px solid #d9ddc9; border-radius:27px; background:#fbfaf3; box-shadow:0 18px 48px #4b61341a,0 3px 9px #4b61340a; }
+    .playfield { height:clamp(330px,47vw,455px); min-height:330px; position:relative; overflow:hidden; background:linear-gradient(180deg,#dcefd8 0%,#eaf2d9 64%,#d8e7bd 64.2%,#c3d59f 100%); }
+    .sunlight { position:absolute;width:280px;height:280px;top:-150px;right:10%;border-radius:50%;background:#fff8cb;opacity:.65;filter:blur(2px); }
+    .cloud { position:absolute;top:53px;left:12%;width:82px;height:26px;border-radius:30px;background:#ffffff85; }
+    .cloud:before,.cloud:after { content:"";position:absolute;bottom:0;background:inherit;border-radius:50%; }
+    .cloud:before {width:35px;height:35px;left:12px}.cloud:after {width:29px;height:29px;left:39px}
+    .cloud.two { top:90px;left:auto;right:21%;transform:scale(.7);opacity:.7; }
+    .hill {position:absolute;bottom:74px;width:390px;height:130px;border-radius:50% 50% 0 0;background:#aaca88;opacity:.58;}
+    .hill.left {left:-120px;transform:rotate(-9deg)} .hill.right {right:-130px;bottom:61px;background:#b7d391;transform:rotate(9deg)}
+    .ground {position:absolute;left:0;right:0;bottom:0;height:79px;background:linear-gradient(#90b16b,#7f9e58);border-top:5px solid #b9cf8f;}
+    .ground:after {content:"";position:absolute;inset:16px 0 auto;height:2px;background:#ffffff30;}
+    .flower {position:absolute;bottom:75px;font-size:21px;filter:saturate(.85);z-index:2}.f1{left:8%}.f2{left:23%;bottom:79px}.f3{right:13%;bottom:82px}.f4{right:27%;font-size:16px}
+    .scene-label {position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;padding:7px 12px;background:#ffffffb9;border:1px solid #ffffffb8;border-radius:999px;color:#536a4d;font-weight:800;font-size:12px;white-space:nowrap;}
+    .target-pill { width:7px;height:7px;border-radius:50%;background:#e0aa35;box-shadow:0 0 0 3px #f3dda4; }
+    .monster-wrap {position:absolute;left:50%;bottom:69px;transform:translateX(-50%);width:clamp(154px,21vw,215px);height:205px;display:flex;align-items:flex-end;justify-content:center;z-index:3;transition:transform .75s cubic-bezier(.2,.8,.2,1),filter .5s;}
+    .monster {max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 12px 5px #43502e2b);transition:transform .7s cubic-bezier(.2,.8,.2,1),filter .6s;transform-origin:50% 100%;}
+    .monster-number {position:absolute;top:3px;right:-11px;min-width:46px;height:46px;padding:0 9px;display:grid;place-items:center;background:#fffdf2;border:3px solid #f0c962;border-radius:50%;font-weight:950;font-size:22px;color:#965b31;box-shadow:0 3px 0 #c68b39;transition:opacity .3s;}
+    .crew {position:absolute;left:50%;bottom:190px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center;gap:2px;width:245px;height:100px;z-index:4;pointer-events:none;transition:bottom .45s ease;}
+    .pikmin {width:clamp(29px,4.4vw,46px);height:clamp(44px,7.3vw,75px);object-fit:contain;filter:drop-shadow(0 4px 2px #27351e35);animation:bob 1.8s ease-in-out infinite;animation-delay:calc(var(--i)*-0.13s);transition:transform .8s cubic-bezier(.18,.8,.25,1),opacity .5s;}
+    @keyframes bob {0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
+    .equation-card {position:absolute;top:77px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:11px;padding:11px 17px;background:#fffdf7e8;border:1px solid #ffffff;border-radius:19px;box-shadow:0 8px 24px #42543c19;white-space:nowrap;z-index:5;}
+    .equation-card .num {min-width:38px;text-align:center;font-size:clamp(23px,4vw,35px);font-weight:950;letter-spacing:-.06em;font-variant-numeric:tabular-nums;}
+    .equation-card .minus {font-size:22px;color:#a2aa9c;font-weight:600;}
+    .equation-card .blank {min-width:53px;height:48px;padding:0 5px;border:2px dashed #a3bb88;border-radius:12px;background:#f6faee;color:var(--green);text-align:center;font-size:28px;font-weight:900;outline:none;transition:.18s;}
+    .equation-card .blank:focus {border-style:solid;border-color:#67924f;box-shadow:0 0 0 4px #9ac78042;}
+    .equation-card .blank:disabled {background:#eaf2dd;border-style:solid;}
+    .feedback {position:absolute;top:186px;left:50%;transform:translateX(-50%);padding:6px 12px;border-radius:999px;background:#fffdf2;color:#486c3d;font-size:13px;font-weight:850;white-space:nowrap;z-index:8;opacity:0;transition:opacity .2s;}
+    .feedback.show {opacity:1}.feedback.wrong{color:#a84c3d;background:#fff0e9}
+    .run .pikmin {animation:none;transform:translateY(58px) scale(.86);opacity:.35;}
+    .run .monster-wrap {transform:translateX(-50%) translateY(75px) scaleY(.38);filter:brightness(.9);}
+    .run .monster {transform:rotate(180deg);filter:drop-shadow(0 4px 2px #43502e35);}
+    .run .monster-number {opacity:0;}
+    .run .ground {background:linear-gradient(#8ca963,#79934e)}
+    .wrong-state .crew {bottom:79px;}
+    .wrong-state .pikmin {animation:none;transform:rotate(90deg);transform-origin:center;}
+    .controls {display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:18px 21px 20px;background:#fffdf8;}
+    .left-controls {display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
+    .target-control {display:flex;align-items:center;gap:8px;color:#667166;font-size:13px;font-weight:750;}
+    .target-input {width:69px;height:40px;padding:0 8px;border:1px solid #dcded1;border-radius:11px;background:#f8f8f1;color:var(--ink);text-align:center;font-weight:850;outline:none;}
+    .target-input:focus {border-color:#8caa75;box-shadow:0 0 0 3px #b7cf9d55;}
+    .toggle {display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid #e1e2d7;border-radius:11px;color:#6d776a;font-size:12px;font-weight:750;cursor:pointer;}
+    .toggle input{accent-color:#64884f}
+    .buttons {display:flex;justify-content:flex-end;align-items:center;gap:9px;}
+    .btn {height:45px;padding:0 18px;border:0;border-radius:13px;cursor:pointer;font-weight:850;transition:transform .13s,box-shadow .13s,background .13s;}
+    .btn:hover {transform:translateY(-2px)}.btn:active{transform:translateY(1px)}
+    .btn-primary {background:#537a4c;color:white;box-shadow:0 4px 0 #3e623c;}
+    .btn-primary:hover{background:#608959;box-shadow:0 5px 0 #3e623c}
+    .btn-secondary {background:#f1f1e8;color:#596653;}
+    .hint {margin:11px 5px 0;color:#778276;font-size:12px;text-align:center;}
+    .sparkle {position:absolute;z-index:7;font-size:22px;pointer-events:none;animation:pop 850ms ease-out forwards;}
+    @keyframes pop {0%{opacity:0;transform:translateY(10px) scale(.4)}25%{opacity:1;transform:translateY(-10px) scale(1.25)}100%{opacity:0;transform:translateY(-52px) scale(.7)}}
+    @media(max-width:620px){.page{padding:16px 12px 22px}.brand-mark{width:42px;height:42px}.intro{font-size:12px;margin-bottom:12px}.playfield{height:410px}.scene-label{top:14px}.equation-card{top:65px;gap:8px;padding:9px 12px}.feedback{top:158px}.monster-wrap{bottom:58px;width:159px;height:175px}.crew{bottom:184px;gap:0;width:225px;height:86px}.wrong-state .crew{bottom:68px}.pikmin{width:31px;height:51px}.ground{height:68px}.flower{bottom:65px}.f2,.f4{bottom:69px}.controls{grid-template-columns:1fr;padding:14px 13px 16px;gap:13px}.left-controls{justify-content:center}.buttons{justify-content:center}.btn{flex:1;max-width:170px}.hint{margin-top:9px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="brand"><div class="brand-mark" aria-hidden="true">🌱</div><div><p class="eyebrow">PIKMIN × MATH TIME</p><h1>皮克敏減法大作戰</h1></div></div>
+      <div class="score" aria-live="polite"><span>🌼</span> 答對 <b id="score">0</b> 題</div>
+    </header>
+    <p class="intro">算出還差幾隻皮克敏，就能一起把怪物壓扁！</p>
+
+    <section class="game" aria-label="減法遊戲場景">
+      <div class="playfield" id="playfield">
+        <div class="sunlight"></div><div class="cloud"></div><div class="cloud two"></div>
+        <div class="hill left"></div><div class="hill right"></div>
+        <div class="scene-label"><span class="target-pill"></span><span id="sceneLabel">怪物需要 10 隻皮克敏</span></div>
+        <div class="equation-card" aria-label="減法算式">
+          <span class="num" id="targetNumber">10</span><span class="minus">−</span><span class="num" id="firstNumber">2</span><span class="minus">=</span>
+          <input class="blank" id="answer" type="number" inputmode="numeric" min="0" aria-label="答案" autocomplete="off" />
+        </div>
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+        <div class="monster-wrap" id="monsterWrap"><img class="monster" src="assets/bulborb.webp" alt="大眼怪物" /><span class="monster-number" id="monsterNumber">10</span></div>
+        <div class="crew" id="crew" aria-label="已到場的皮克敏"></div>
+        <div class="flower f1">🌼</div><div class="flower f2">🌱</div><div class="flower f3">🌸</div><div class="flower f4">🌿</div>
+        <div class="ground"></div>
+      </div>
+      <div class="controls">
+        <div class="left-controls">
+          <label class="target-control" for="targetInput">怪物數字 <input id="targetInput" class="target-input" type="number" min="2" max="30" value="10" aria-label="自訂怪物數字" /></label>
+          <label class="toggle"><input id="randomTarget" type="checkbox" /> 每題隨機數字（≤10）</label>
+          <label class="toggle"><input id="autoNext" type="checkbox" checked /> 答對自動下一題</label>
+        </div>
+        <div class="buttons"><button id="newQuestion" class="btn btn-secondary" type="button">換一題 ↻</button><button id="checkAnswer" class="btn btn-primary" type="button">送出答案</button></div>
+      </div>
+    </section>
+    <p class="hint">小提示：先看怪物要幾隻，再減掉已經出發的皮克敏。</p>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const targetInput = $('targetInput');
+    const randomTarget = $('randomTarget');
+    const autoNext = $('autoNext');
+    const answer = $('answer');
+    const crew = $('crew');
+    const playfield = $('playfield');
+    let target = 10;
+    let already = 2;
+    let solved = false;
+    let score = 0;
+
+    function drawPikmin(count) {
+      crew.replaceChildren();
+      for (let i = 0; i < count; i++) {
+        const img = document.createElement('img');
+        img.src = 'assets/pikmin.webp'; img.alt = i === 0 ? `${count} 隻皮克敏` : '';
+        img.className = 'pikmin'; img.style.setProperty('--i', i);
+        crew.append(img);
+      }
+    }
+
+    function chooseTarget() {
+      const entered = Math.floor(Number(targetInput.value));
+      target = randomTarget.checked ? 3 + Math.floor(Math.random() * 8) : Math.min(30, Math.max(2, entered || 10));
+      already = 1 + Math.floor(Math.random() * target);
+      solved = false;
+      playfield.classList.remove('run');
+      playfield.classList.remove('wrong-state');
+      $('feedback').className = 'feedback'; $('feedback').textContent = '';
+      $('targetNumber').textContent = target;
+      $('firstNumber').textContent = already;
+      $('monsterNumber').textContent = target;
+      $('sceneLabel').textContent = `怪物需要 ${target} 隻皮克敏`;
+      answer.value = ''; answer.disabled = false;
+      $('checkAnswer').disabled = false;
+      $('checkAnswer').textContent = '送出答案';
+      drawPikmin(already);
+      answer.focus({preventScroll:true});
+    }
+
+    function sparkleBurst() {
+      const marks = ['✦','✨','🌟','✧'];
+      for (let i=0;i<10;i++) {
+        const spark = document.createElement('span'); spark.className='sparkle'; spark.textContent=marks[i%marks.length];
+        spark.style.left = `${35 + Math.random()*30}%`; spark.style.top = `${35 + Math.random()*38}%`;
+        spark.style.animationDelay = `${Math.random()*250}ms`; playfield.append(spark);
+        setTimeout(()=>spark.remove(),1200);
+      }
+    }
+
+    function submit() {
+      if (solved) { chooseTarget(); return; }
+      const val = answer.value.trim();
+      const feedback = $('feedback');
+      if (val === '') { feedback.textContent='先填上答案，皮克敏準備好了！'; feedback.className='feedback show'; answer.focus(); return; }
+      if (Number(val) === target - already) {
+        solved = true; score++; $('score').textContent=score;
+        playfield.classList.remove('wrong-state');
+        feedback.textContent='答對了！皮克敏衝呀——'; feedback.className='feedback show';
+        answer.value = target - already; answer.disabled = true;
+        $('checkAnswer').textContent='再玩一題 →';
+        drawPikmin(target);
+        requestAnimationFrame(()=>playfield.classList.add('run'));
+        sparkleBurst();
+        if (autoNext.checked) setTimeout(() => { if (autoNext.checked && solved) chooseTarget(); }, 1500);
+      } else {
+        playfield.classList.add('wrong-state');
+        feedback.textContent=`再想一下：${target} 隻裡面已經有 ${already} 隻喔。`;
+        feedback.className='feedback show wrong';
+        answer.select();
+      }
+    }
+
+    $('checkAnswer').addEventListener('click', submit);
+    $('newQuestion').addEventListener('click', chooseTarget);
+    answer.addEventListener('keydown', (e)=>{ if(e.key==='Enter') submit(); });
+    targetInput.addEventListener('change', ()=>{ if(!randomTarget.checked) chooseTarget(); });
+    randomTarget.addEventListener('change', ()=>{ targetInput.disabled=randomTarget.checked; chooseTarget(); });
+    targetInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') { e.preventDefault(); chooseTarget(); } });
+    chooseTarget();
+  </script>
+</body>
+</html>
