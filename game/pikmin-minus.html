@@ -55,6 +55,7 @@
     .run .ground {background:linear-gradient(#8ca963,#79934e)}
     .wrong-state .crew {bottom:79px;}
     .wrong-state .pikmin {animation:none;transform:rotate(90deg);transform-origin:center;}
+    .keypad {display:none;}
     .controls {display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:18px 21px 20px;background:#fffdf8;}
     .left-controls {display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
     .target-control {display:flex;align-items:center;gap:8px;color:#667166;font-size:13px;font-weight:750;}
@@ -101,6 +102,19 @@
       .btn{flex:1;min-width:0;max-width:170px;padding:0 10px;font-size:13px}
       .hint{margin-top:9px}
     }
+    @media(min-width:760px) and (any-pointer:coarse){
+      .game{display:grid;grid-template-columns:minmax(0,1fr) 190px;align-items:stretch}
+      .playfield{grid-column:1;grid-row:1}
+      .controls{grid-column:1/-1;grid-row:2}
+      .keypad{grid-column:2;grid-row:1;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:18px 12px;background:#fffdf8;border-left:1px solid #e7e4d7}
+      .keypad-title{margin:0;color:#64715e;text-align:center;font-size:14px;font-weight:850}
+      .keypad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+      .keypad-grid button{min-width:0;aspect-ratio:1;border:1px solid #dfe3d5;border-radius:14px;background:#f7f8ef;color:#324b31;font-size:22px;font-weight:900;box-shadow:0 3px 0 #d6dcc9;touch-action:manipulation}
+      .keypad-grid button:active{transform:translateY(2px);box-shadow:0 1px 0 #d6dcc9;background:#e9f0dd}
+      .keypad-grid .keypad-zero{grid-column:2}
+      .keypad-grid .keypad-action{font-size:16px;background:#f1f1e8;color:#697363}
+      .keypad-hint{margin:0;color:#879080;text-align:center;font-size:11px}
+    }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
 </head>
@@ -119,7 +133,7 @@
         <div class="scene-label"><span class="target-pill"></span><span id="sceneLabel">怪物需要 10 隻皮克敏</span></div>
         <div class="equation-card" aria-label="減法算式">
           <span class="num" id="targetNumber">10</span><span class="minus">−</span><span class="num" id="firstNumber">2</span><span class="minus">=</span>
-          <input class="blank" id="answer" type="number" inputmode="numeric" min="0" aria-label="答案" autocomplete="off" autofocus />
+          <input class="blank" id="answer" type="number" inputmode="numeric" min="0" aria-label="答案" autocomplete="off" />
         </div>
         <div class="feedback" id="feedback" aria-live="polite"></div>
         <div class="monster-wrap" id="monsterWrap"><img class="monster" src="assets/bulborb.webp" alt="大眼怪物" /><span class="monster-number" id="monsterNumber">10</span></div>
@@ -135,6 +149,16 @@
         </div>
         <div class="buttons"><button id="newQuestion" class="btn btn-secondary" type="button">換一題 ↻</button><button id="checkAnswer" class="btn btn-primary" type="button">送出答案</button></div>
       </div>
+      <aside class="keypad" id="keypad" aria-label="數字鍵盤" aria-hidden="true">
+        <h2 class="keypad-title">數字鍵盤</h2>
+        <div class="keypad-grid">
+          <button type="button" data-digit="1">1</button><button type="button" data-digit="2">2</button><button type="button" data-digit="3">3</button>
+          <button type="button" data-digit="4">4</button><button type="button" data-digit="5">5</button><button type="button" data-digit="6">6</button>
+          <button type="button" data-digit="7">7</button><button type="button" data-digit="8">8</button><button type="button" data-digit="9">9</button>
+          <button class="keypad-action" type="button" data-key-action="backspace" aria-label="刪除一位">⌫</button><button class="keypad-zero" type="button" data-digit="0">0</button><button class="keypad-action" type="button" data-key-action="clear">清除</button>
+        </div>
+        <p class="keypad-hint">按數字輸入答案</p>
+      </aside>
     </section>
     <p class="hint">小提示：先看怪物要幾隻，再減掉已經出發的皮克敏。</p>
   </main>
@@ -146,10 +170,22 @@
     const answer = $('answer');
     const crew = $('crew');
     const playfield = $('playfield');
+    const keypad = $('keypad');
+    const keypadMedia = window.matchMedia('(min-width: 760px) and (any-pointer: coarse)');
     let target = 10;
     let already = 2;
     let solved = false;
     let score = 0;
+    let replaceNextKey = false;
+
+    function syncKeypadMode() {
+      const visible = keypadMedia.matches;
+      document.body.classList.toggle('keypad-mode', visible);
+      keypad.setAttribute('aria-hidden', String(!visible));
+      answer.setAttribute('inputmode', visible ? 'none' : 'numeric');
+    }
+    syncKeypadMode();
+    keypadMedia.addEventListener('change', syncKeypadMode);
 
     function drawPikmin(count) {
       crew.replaceChildren();
@@ -165,6 +201,7 @@
       const entered = Math.floor(Number(targetInput.value));
       target = randomTarget.checked ? 3 + Math.floor(Math.random() * 8) : Math.min(30, Math.max(2, entered || 10));
       already = 1 + Math.floor(Math.random() * target);
+      replaceNextKey = false;
       solved = false;
       playfield.classList.remove('run');
       playfield.classList.remove('wrong-state');
@@ -216,6 +253,7 @@
           requestAnimationFrame(()=>$('checkAnswer').focus({preventScroll:true}));
         }
       } else {
+        replaceNextKey = true;
         playfield.classList.add('wrong-state');
         feedback.textContent=`再想一下：${target} 隻裡面已經有 ${already} 隻喔。`;
         feedback.className='feedback show wrong';
@@ -233,9 +271,27 @@
         answer.value = target - already;
         return;
       }
+      replaceNextKey = false;
       const entered = answer.value.trim();
       const digitsNeeded = String(target - already).length;
       if (entered.length >= digitsNeeded && entered.length > 0) submit();
+    });
+    keypad.addEventListener('click', (event)=>{
+      const button = event.target.closest('button');
+      if (!button || !keypadMedia.matches || solved || answer.disabled) return;
+      if (button.dataset.digit !== undefined) {
+        const digitsNeeded = String(target - already).length;
+        if (replaceNextKey || answer.value.length >= digitsNeeded) answer.value = '';
+        answer.value += button.dataset.digit;
+        answer.dispatchEvent(new Event('input', {bubbles:true}));
+      } else if (button.dataset.keyAction === 'backspace') {
+        answer.value = answer.value.slice(0, -1);
+        answer.dispatchEvent(new Event('input', {bubbles:true}));
+      } else if (button.dataset.keyAction === 'clear') {
+        answer.value = '';
+        replaceNextKey = false;
+      }
+      if (!answer.disabled) answer.focus({preventScroll:true});
     });
     targetInput.addEventListener('change', ()=>{ if(!randomTarget.checked) chooseTarget(); });
     randomTarget.addEventListener('change', ()=>{ targetInput.disabled=randomTarget.checked; chooseTarget(); });
