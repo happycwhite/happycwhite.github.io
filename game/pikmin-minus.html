@@ -119,7 +119,7 @@
         <div class="scene-label"><span class="target-pill"></span><span id="sceneLabel">怪物需要 10 隻皮克敏</span></div>
         <div class="equation-card" aria-label="減法算式">
           <span class="num" id="targetNumber">10</span><span class="minus">−</span><span class="num" id="firstNumber">2</span><span class="minus">=</span>
-          <input class="blank" id="answer" type="number" inputmode="numeric" enterkeyhint="done" min="0" aria-label="答案" autocomplete="off" autofocus />
+          <input class="blank" id="answer" type="number" inputmode="numeric" min="0" aria-label="答案" autocomplete="off" autofocus />
         </div>
         <div class="feedback" id="feedback" aria-live="polite"></div>
         <div class="monster-wrap" id="monsterWrap"><img class="monster" src="assets/bulborb.webp" alt="大眼怪物" /><span class="monster-number" id="monsterNumber">10</span></div>
@@ -204,18 +204,30 @@
         drawPikmin(target);
         requestAnimationFrame(()=>playfield.classList.add('run'));
         sparkleBurst();
-        if (autoNext.checked) setTimeout(() => { if (autoNext.checked && solved) chooseTarget(); }, 1500);
+        if (autoNext.checked) {
+          setTimeout(() => { if (autoNext.checked && solved) chooseTarget(); }, 1500);
+        } else {
+          requestAnimationFrame(()=>$('checkAnswer').focus({preventScroll:true}));
+        }
       } else {
         playfield.classList.add('wrong-state');
         feedback.textContent=`再想一下：${target} 隻裡面已經有 ${already} 隻喔。`;
         feedback.className='feedback show wrong';
-        answer.select();
+        requestAnimationFrame(()=>{
+          answer.focus({preventScroll:true});
+          answer.select();
+        });
       }
     }
 
     $('checkAnswer').addEventListener('click', submit);
     $('newQuestion').addEventListener('click', chooseTarget);
-    answer.addEventListener('keydown', (e)=>{ if(e.key==='Enter') submit(); });
+    answer.addEventListener('input', ()=>{
+      if (solved) return;
+      const entered = answer.value.trim();
+      const digitsNeeded = String(target - already).length;
+      if (entered.length >= digitsNeeded && entered.length > 0) submit();
+    });
     targetInput.addEventListener('change', ()=>{ if(!randomTarget.checked) chooseTarget(); });
     randomTarget.addEventListener('change', ()=>{ targetInput.disabled=randomTarget.checked; chooseTarget(); });
     targetInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') { e.preventDefault(); chooseTarget(); } });
