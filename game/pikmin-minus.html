@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f5f2e8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="description" content="帶著皮克敏練習減法，算出還差幾隻才能把怪物壓扁！" />
   <title>皮克敏減法大作戰</title>
   <style>
@@ -136,13 +139,13 @@
       .keypad-grid .keypad-action{font-size:17px;background:#f1f1e8;color:#697363}
       .keypad-hint{margin:0;color:#879080;text-align:center;font-size:11px}
     }
-    @media(min-width:621px){
-      body.portrait-mode .playfield{height:clamp(460px,70vw,560px)}
-      body.portrait-mode .equation-card .blank{width:46px;min-width:46px}
+    @media(min-width:621px) and (orientation:portrait){
+      .playfield{height:clamp(460px,70vw,560px)}
+      .equation-card .blank{width:46px;min-width:46px}
     }
-    @media(max-width:620px){
-      body.portrait-mode .playfield{height:clamp(390px,110vw,460px);min-height:390px}
-      body.portrait-mode .equation-card .blank{width:44px;min-width:44px}
+    @media(max-width:620px) and (orientation:portrait){
+      .playfield{height:clamp(390px,110vw,460px);min-height:390px}
+      .equation-card .blank{width:44px;min-width:44px}
     }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
@@ -212,7 +215,6 @@
     const pikminTypeChoices = $('pikminTypeChoices');
     const typeDialog = $('typeDialog');
     const keypadMedia = window.matchMedia('(min-width: 760px) and (any-pointer: coarse)');
-    const portraitMedia = window.matchMedia('(orientation: portrait)');
     const PIKMIN_TYPES = [
       { id: 'red', name: '紅色', src: 'assets/pikmin.webp' },
       { id: 'glow', name: '發光', src: 'assets/glow-pikmin-2x.webp' },
@@ -237,18 +239,10 @@
       answer.setAttribute('inputmode', visible ? 'none' : 'numeric');
     }
 
-    function syncOrientationLayout() {
-      document.body.classList.toggle('portrait-mode', portraitMedia.matches);
-      document.body.classList.toggle('landscape-mode', !portraitMedia.matches);
-      requestAnimationFrame(() => playfield.getBoundingClientRect());
-    }
-
-    syncOrientationLayout();
     syncKeypadMode();
-    window.addEventListener('resize', syncOrientationLayout, {passive:true});
-    window.addEventListener('orientationchange', syncOrientationLayout, {passive:true});
-    portraitMedia.addEventListener('change', syncOrientationLayout);
-    if (screen.orientation) screen.orientation.addEventListener('change', syncOrientationLayout);
+    window.addEventListener('resize', syncKeypadMode, {passive:true});
+    window.addEventListener('orientationchange', syncKeypadMode, {passive:true});
+    if (screen.orientation?.addEventListener) screen.orientation.addEventListener('change', syncKeypadMode);
     keypadMedia.addEventListener('change', syncKeypadMode);
 
     function shuffle(items) {
