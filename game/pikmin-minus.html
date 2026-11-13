@@ -126,52 +126,55 @@
       .btn{flex:1;min-width:0;max-width:170px;padding:0 10px;font-size:13px}
       .hint{margin-top:9px}
     }
-    @media(min-width:760px) and (any-pointer:coarse){
-      .game{display:grid;grid-template-columns:minmax(0,1fr) 230px;align-items:stretch}
-      .playfield{grid-column:1;grid-row:1}
-      .controls{grid-column:1/-1;grid-row:2}
-      .keypad{grid-column:2;grid-row:1;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:18px 14px;background:#fffdf8;border-left:1px solid #e7e4d7}
-      .keypad-title{margin:0;color:#64715e;text-align:center;font-size:16px;font-weight:850}
-      .keypad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-      .keypad-grid button{min-width:0;min-height:58px;aspect-ratio:1.1;border:1px solid #dfe3d5;border-radius:15px;background:#f7f8ef;color:#324b31;font-size:26px;font-weight:900;box-shadow:0 3px 0 #d6dcc9;touch-action:manipulation}
-      .keypad-grid button:active{transform:translateY(2px);box-shadow:0 1px 0 #d6dcc9;background:#e9f0dd}
-      .keypad-grid .keypad-zero{grid-column:2}
-      .keypad-grid .keypad-action{font-size:17px;background:#f1f1e8;color:#697363}
-      .keypad-hint{margin:0;color:#879080;text-align:center;font-size:11px}
+    @media(any-pointer:coarse){
+      body.keypad-mode .game{display:grid;grid-template-columns:minmax(0,1fr) 230px;align-items:stretch}
+      body.keypad-mode .playfield{grid-column:1;grid-row:1}
+      body.keypad-mode .controls{grid-column:1/-1;grid-row:2}
+      body.keypad-mode .keypad{grid-column:2;grid-row:1;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:18px 14px;background:#fffdf8;border-left:1px solid #e7e4d7}
+      body.keypad-mode .keypad-title{margin:0;color:#64715e;text-align:center;font-size:16px;font-weight:850}
+      body.keypad-mode .keypad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+      body.keypad-mode .keypad-grid button{min-width:0;min-height:58px;aspect-ratio:1.1;border:1px solid #dfe3d5;border-radius:15px;background:#f7f8ef;color:#324b31;font-size:26px;font-weight:900;box-shadow:0 3px 0 #d6dcc9;touch-action:manipulation}
+      body.keypad-mode .keypad-grid button:active{transform:translateY(2px);box-shadow:0 1px 0 #d6dcc9;background:#e9f0dd}
+      body.keypad-mode .keypad-grid .keypad-zero{grid-column:2}
+      body.keypad-mode .keypad-grid .keypad-action{font-size:17px;background:#f1f1e8;color:#697363}
+      body.keypad-mode .keypad-hint{margin:0;color:#879080;text-align:center;font-size:11px}
     }
     @media(min-width:621px) and (orientation:portrait){
       .playfield{height:clamp(460px,70vw,560px)}
       .equation-card .blank{width:46px;min-width:46px}
     }
+    @media(min-width:621px){
+      body.portrait-mode .playfield{height:clamp(460px,70vw,560px)}
+      body.portrait-mode .equation-card .blank{width:46px;min-width:46px}
+    }
     @media(max-width:620px) and (orientation:portrait){
       .playfield{height:clamp(390px,110vw,460px);min-height:390px}
       .equation-card .blank{width:44px;min-width:44px}
     }
-    @media(orientation:landscape) and (max-height:620px){
-      .page{padding:10px 16px 18px}
-      header{margin-bottom:7px}
-      .brand{gap:8px}
-      .brand-mark{width:36px;height:36px;flex-basis:36px;font-size:21px}
-      .eyebrow{font-size:10px}
-      h1{font-size:clamp(18px,3vw,25px)}
-      .score{padding:6px 11px;font-size:13px}
-      .intro{margin-bottom:8px;font-size:12px}
-      .playfield{height:clamp(330px,72svh,420px);min-height:330px}
-      .scene-label{top:10px}
-      .equation-card{top:54px;gap:8px;padding:8px 12px}
-      .equation-card .num{min-width:34px;font-size:clamp(22px,3.5vw,30px)}
-      .equation-card .blank{width:44px;min-width:44px;height:43px;font-size:25px}
-      .feedback{top:112px}
-      .monster-wrap{bottom:42px;width:clamp(145px,18vw,185px);height:165px}
-      .crew{bottom:52px;height:165px}
-      .pikmin{width:clamp(48px,6vw,66px);height:clamp(68px,8vw,92px)}
-      .ground{height:56px}
-      .flower{bottom:52px}.f2,.f4{bottom:56px}
-      .controls{padding:12px 16px;gap:10px}
-      .left-controls{gap:7px}
-      .toggle{padding:7px 8px}
-      .btn{height:40px;padding:0 12px}
-    }
+    @media(max-width:620px){body.portrait-mode .playfield{height:clamp(390px,110vw,460px);min-height:390px}body.portrait-mode .equation-card .blank{width:44px;min-width:44px}}
+    body.landscape-compact .page{padding:10px 16px 18px}
+    body.landscape-compact header{margin-bottom:7px}
+    body.landscape-compact .brand{gap:8px}
+    body.landscape-compact .brand-mark{width:36px;height:36px;flex-basis:36px;font-size:21px}
+    body.landscape-compact .eyebrow{font-size:10px}
+    body.landscape-compact h1{font-size:clamp(18px,3vw,25px)}
+    body.landscape-compact .score{padding:6px 11px;font-size:13px}
+    body.landscape-compact .intro{margin-bottom:8px;font-size:12px}
+    body.landscape-compact .playfield{height:var(--landscape-scene-height,330px);min-height:330px}
+    body.landscape-compact .scene-label{top:10px}
+    body.landscape-compact .equation-card{top:54px;gap:8px;padding:8px 12px}
+    body.landscape-compact .equation-card .num{min-width:34px;font-size:clamp(22px,3.5vw,30px)}
+    body.landscape-compact .equation-card .blank{width:44px;min-width:44px;height:43px;font-size:25px}
+    body.landscape-compact .feedback{top:112px}
+    body.landscape-compact .monster-wrap{bottom:42px;width:clamp(145px,18vw,185px);height:165px}
+    body.landscape-compact .crew{bottom:52px;height:165px}
+    body.landscape-compact .pikmin{width:clamp(48px,6vw,66px);height:clamp(68px,8vw,92px)}
+    body.landscape-compact .ground{height:56px}
+    body.landscape-compact .flower{bottom:52px}body.landscape-compact .f2,body.landscape-compact .f4{bottom:56px}
+    body.landscape-compact .controls{padding:12px 16px;gap:10px}
+    body.landscape-compact .left-controls{gap:7px}
+    body.landscape-compact .toggle{padding:7px 8px}
+    body.landscape-compact .btn{height:40px;padding:0 12px}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
 </head>
@@ -239,7 +242,7 @@
     const keypad = $('keypad');
     const pikminTypeChoices = $('pikminTypeChoices');
     const typeDialog = $('typeDialog');
-    const keypadMedia = window.matchMedia('(min-width: 760px) and (any-pointer: coarse)');
+    const coarsePointerMedia = window.matchMedia('(any-pointer: coarse)');
     const PIKMIN_TYPES = [
       { id: 'red', name: '紅色', src: 'assets/pikmin.webp' },
       { id: 'glow', name: '發光', src: 'assets/glow-pikmin-2x.webp' },
@@ -257,18 +260,41 @@
     let score = 0;
     let replaceNextKey = false;
 
-    function syncKeypadMode() {
-      const visible = keypadMedia.matches;
+    function isPortraitOrientation() {
+      if (typeof window.orientation === 'number') return Math.abs(window.orientation) % 180 === 0;
+      const orientationType = screen.orientation?.type;
+      if (orientationType) return orientationType.startsWith('portrait');
+      return window.matchMedia('(orientation: portrait)').matches;
+    }
+
+    function syncOrientationLayout() {
+      const portrait = isPortraitOrientation();
+      const shortSide = Math.min(window.innerWidth, window.innerHeight);
+      document.body.classList.toggle('portrait-mode', portrait);
+      document.body.classList.toggle('landscape-mode', !portrait);
+      document.body.classList.toggle('landscape-compact', !portrait && shortSide <= 620);
+      document.documentElement.style.setProperty('--landscape-scene-height', `${Math.max(330, Math.min(420, Math.round(shortSide * .72)))}px`);
+      syncKeypadMode(portrait);
+    }
+
+    function syncKeypadMode(portrait = isPortraitOrientation()) {
+      const currentWidth = portrait ? Math.min(window.innerWidth, window.innerHeight) : Math.max(window.innerWidth, window.innerHeight);
+      const visible = coarsePointerMedia.matches && currentWidth >= 760;
       document.body.classList.toggle('keypad-mode', visible);
       keypad.setAttribute('aria-hidden', String(!visible));
       answer.setAttribute('inputmode', visible ? 'none' : 'numeric');
     }
 
-    syncKeypadMode();
-    window.addEventListener('resize', syncKeypadMode, {passive:true});
-    window.addEventListener('orientationchange', syncKeypadMode, {passive:true});
-    if (screen.orientation?.addEventListener) screen.orientation.addEventListener('change', syncKeypadMode);
-    keypadMedia.addEventListener('change', syncKeypadMode);
+    function scheduleOrientationSync() {
+      syncOrientationLayout();
+      window.setTimeout(syncOrientationLayout, 120);
+      window.setTimeout(syncOrientationLayout, 350);
+    }
+
+    syncOrientationLayout();
+    window.addEventListener('resize', syncOrientationLayout, {passive:true});
+    window.addEventListener('orientationchange', scheduleOrientationSync, {passive:true});
+    if (screen.orientation?.addEventListener) screen.orientation.addEventListener('change', scheduleOrientationSync);
 
     function shuffle(items) {
       for (let i = items.length - 1; i > 0; i--) {
@@ -442,7 +468,7 @@
     });
     keypad.addEventListener('click', (event)=>{
       const button = event.target.closest('button');
-      if (!button || !keypadMedia.matches || solved || answer.disabled) return;
+      if (!button || !document.body.classList.contains('keypad-mode') || solved || answer.disabled) return;
       if (button.dataset.digit !== undefined) {
         const digitsNeeded = String(target - already).length;
         if (replaceNextKey || answer.value.length >= digitsNeeded) answer.value = '';
