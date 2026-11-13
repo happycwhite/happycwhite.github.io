@@ -59,6 +59,12 @@
     .controls {display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:18px 21px 20px;background:#fffdf8;}
     .left-controls {display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
     .target-control {display:flex;align-items:center;gap:8px;color:#667166;font-size:13px;font-weight:750;}
+    .type-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:#667166;font-size:12px;font-weight:750;}
+    .type-picker-title {margin-right:2px;}
+    .type-choices {display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .type-option {display:flex;align-items:center;gap:5px;padding:8px 9px;border:1px solid #e1e2d7;border-radius:11px;background:#fffdf8;color:#6d776a;font-size:12px;font-weight:750;cursor:pointer;}
+    .type-option input {accent-color:#64884f;}
+    .type-option input:disabled {opacity:.55;}
     .target-input {width:69px;height:40px;padding:0 8px;border:1px solid #dcded1;border-radius:11px;background:#f8f8f1;color:var(--ink);text-align:center;font-weight:850;outline:none;}
     .target-input:focus {border-color:#8caa75;box-shadow:0 0 0 3px #b7cf9d55;}
     .toggle {display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid #e1e2d7;border-radius:11px;color:#6d776a;font-size:12px;font-weight:750;cursor:pointer;}
@@ -144,6 +150,7 @@
       <div class="controls">
         <div class="left-controls">
           <label class="target-control" for="targetInput">怪物數字 <input id="targetInput" class="target-input" type="number" inputmode="numeric" enterkeyhint="done" min="2" max="30" value="10" aria-label="自訂怪物數字" /></label>
+          <div class="type-picker" role="group" aria-label="皮克敏顏色選擇"><span class="type-picker-title">皮克敏</span><div id="pikminTypeChoices" class="type-choices"></div><label class="type-option"><input id="randomPikminMix" type="checkbox" /> 全部隨機</label></div>
           <label class="toggle"><input id="randomTarget" type="checkbox" /> 每題隨機數字（≤10）</label>
           <label class="toggle"><input id="autoNext" type="checkbox" checked /> 答對自動下一題</label>
         </div>
@@ -171,6 +178,8 @@
     const crew = $('crew');
     const playfield = $('playfield');
     const keypad = $('keypad');
+    const pikminTypeChoices = $('pikminTypeChoices');
+    const randomPikminMix = $('randomPikminMix');
     const keypadMedia = window.matchMedia('(min-width: 760px) and (any-pointer: coarse)');
     const PIKMIN_TYPES = [
       { id: 'red', name: '紅色', src: 'assets/pikmin.webp' },
@@ -199,11 +208,39 @@
       return items;
     }
 
+    function renderPikminTypeChoices() {
+      pikminTypeChoices.replaceChildren();
+      PIKMIN_TYPES.forEach((type) => {
+        const label = document.createElement('label');
+        label.className = 'type-option';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = type.id;
+        checkbox.checked = true;
+        checkbox.setAttribute('aria-label', `${type.name}皮克敏`);
+        label.append(checkbox, document.createTextNode(type.name));
+        pikminTypeChoices.append(label);
+      });
+    }
+
+    function getSelectedPikminTypes() {
+      if (randomPikminMix.checked) return PIKMIN_TYPES;
+      const selectedIds = new Set([...pikminTypeChoices.querySelectorAll('input:checked')].map((input) => input.value));
+      return PIKMIN_TYPES.filter((type) => selectedIds.has(type.id));
+    }
+
+    function refreshPikminTypeMode() {
+      pikminTypeChoices.querySelectorAll('input').forEach((input) => { input.disabled = randomPikminMix.checked; });
+      drawPikmin(solved ? target : already);
+    }
+
     function drawPikmin(count) {
       crew.replaceChildren();
-      const types = Array.from({length: count}, () => PIKMIN_TYPES[Math.floor(Math.random() * PIKMIN_TYPES.length)]);
-      if (count >= PIKMIN_TYPES.length) {
-        PIKMIN_TYPES.forEach((type, index) => { types[index] = type; });
+      const availableTypes = getSelectedPikminTypes();
+      if (availableTypes.length === 0) return;
+      const types = Array.from({length: count}, () => availableTypes[Math.floor(Math.random() * availableTypes.length)]);
+      if (!randomPikminMix.checked && count >= availableTypes.length) {
+        availableTypes.forEach((type, index) => { types[index] = type; });
         shuffle(types);
       }
       const presentTypes = [...new Set(types.map((type) => type.name))];
@@ -292,6 +329,16 @@
       }
     }
 
+    renderPikminTypeChoices();
+    pikminTypeChoices.addEventListener('change', (event)=>{
+      const selected = pikminTypeChoices.querySelectorAll('input:checked');
+      if (selected.length === 0) {
+        event.target.checked = true;
+        return;
+      }
+      refreshPikminTypeMode();
+    });
+    randomPikminMix.addEventListener('change', refreshPikminTypeMode);
     $('checkAnswer').addEventListener('click', submit);
     $('newQuestion').addEventListener('click', chooseTarget);
     answer.addEventListener('input', ()=>{
