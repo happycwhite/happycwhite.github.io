@@ -12,6 +12,7 @@
   <style>
     :root { color-scheme: light; --ink:#26362b; --green:#426b43; --leaf:#8cae70; --paper:#f5f2e8; --sun:#f0bd4f; --red:#e65545; --muted:#748074; }
     * { box-sizing: border-box; }
+    [hidden] { display:none!important; }
     body { margin:0; min-height:100vh; color:var(--ink); background:radial-gradient(ellipse at 50% -15%,#fffdf7 0%,var(--paper) 57%,#e9eddb 100%); font-family:ui-rounded,"Noto Sans TC","PingFang TC",system-ui,sans-serif; }
     button,input { font:inherit; }
     .page { width:min(1080px,100%); margin:auto; padding:22px 24px 28px; }
@@ -51,6 +52,11 @@
     .equation-card .blank:disabled {background:#eaf2dd;border-style:solid;}
     .feedback {position:absolute;top:186px;left:50%;transform:translateX(-50%);padding:6px 12px;border-radius:999px;background:#fffdf2;color:#486c3d;font-size:13px;font-weight:850;white-space:nowrap;z-index:8;opacity:0;transition:opacity .2s;}
     .feedback.show {opacity:1}.feedback.wrong{color:#a84c3d;background:#fff0e9}
+    .exam-ready {position:absolute;inset:0;z-index:9;display:grid;place-items:center;padding:20px;background:#edf4e2d9;text-align:center;backdrop-filter:blur(2px);}
+    .exam-ready[hidden] {display:none;}
+    .exam-ready-card {display:grid;gap:8px;padding:20px 24px;border:1px solid #ffffff;border-radius:19px;background:#fffdf2ed;box-shadow:0 8px 24px #42543c19;}
+    .exam-ready-card strong {color:#3f6b41;font-size:22px;}
+    .exam-ready-card span {color:#687466;font-size:14px;font-weight:750;}
     .run .pikmin {animation:none;transform:translateY(58px) scale(.86);opacity:.35;}
     .run .monster-wrap {transform:translateX(-50%) translateY(75px) scaleY(.38);filter:brightness(.9);}
     .run .monster {transform:rotate(180deg);filter:drop-shadow(0 4px 2px #43502e35);}
@@ -60,9 +66,15 @@
     .wrong-state .pikmin {animation:none;left:var(--ground-x)!important;top:calc(100% - 68px)!important;transform:translateY(14px) rotate(90deg);transform-origin:center;}
     .keypad {display:none;}
     .controls {display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:18px 21px 20px;background:#fffdf8;}
+    .mode-nav {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid #ebece3;}
+    .mode-tabs {display:flex;gap:4px;padding:4px;border:1px solid #e1e5d9;border-radius:13px;background:#f3f5ed;}
+    .mode-tab {min-height:38px;padding:0 16px;border:0;border-radius:10px;background:transparent;color:#667166;font-size:13px;font-weight:850;cursor:pointer;}
+    .mode-tab[aria-pressed="true"] {background:#fffdf8;color:#3f6b41;box-shadow:0 2px 6px #45563114;}
+    .history-button {height:40px;padding:0 13px;font-size:13px;}
     .exam-toolbar {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
     .exam-actions {display:flex;align-items:center;gap:8px;}
     .exam-actions .btn {height:40px;padding:0 13px;font-size:13px;}
+    .exam-instructions {margin:0;color:#748074;font-size:12px;}
     .exam-tracker {display:flex;align-items:center;gap:10px;min-width:min(360px,100%);color:#566652;font-size:13px;font-weight:850;font-variant-numeric:tabular-nums;}
     .exam-tracker[hidden] {display:none;}
     .timer-track {height:10px;flex:1;min-width:70px;overflow:hidden;border-radius:999px;background:#e8ecdf;}
@@ -134,6 +146,8 @@
       .ground{height:68px}
       .flower{bottom:65px}.f2,.f4{bottom:69px}
       .controls{grid-template-columns:1fr;padding:14px 10px 16px;gap:13px}
+      .mode-nav{padding-bottom:9px}
+      .mode-tab{padding:0 13px}
       .exam-toolbar{justify-content:center}
       .exam-tracker{min-width:min(360px,100%)}
       .left-controls{justify-content:center;gap:7px}
@@ -216,22 +230,28 @@
         <div class="feedback" id="feedback" aria-live="polite"></div>
         <div class="monster-wrap" id="monsterWrap"><img class="monster" src="assets/bulborb.webp" alt="大眼怪物" /><span class="monster-number" id="monsterNumber">10</span></div>
         <div class="crew" id="crew" aria-label="已到場的皮克敏"></div>
+        <div id="examReady" class="exam-ready" hidden><div class="exam-ready-card"><strong>限時考試</strong><span>20 題・每題 2 秒・超時算錯</span></div></div>
         <div class="flower f1">🌼</div><div class="flower f2">🌱</div><div class="flower f3">🌸</div><div class="flower f4">🌿</div>
         <div class="ground"></div>
       </div>
       <div class="controls">
-        <div class="exam-toolbar">
-          <div class="exam-actions"><button id="startExam" class="btn btn-primary" type="button">開始限時考試（20 題）</button><button id="openHistory" class="btn btn-secondary" type="button">歷史紀錄</button></div>
+        <div class="mode-nav" role="group" aria-label="遊戲模式">
+          <div class="mode-tabs"><button id="practiceMode" class="mode-tab" type="button" aria-pressed="true">練習</button><button id="examMode" class="mode-tab" type="button" aria-pressed="false">考試</button></div>
+          <button id="openHistory" class="btn btn-secondary history-button" type="button">歷史紀錄</button>
+        </div>
+        <div id="examToolbar" class="exam-toolbar" hidden>
+          <div class="exam-actions"><button id="startExam" class="btn btn-primary" type="button">開始限時考試（20 題）</button></div>
           <div id="examTracker" class="exam-tracker" hidden><span id="examProgress">第 0 / 20 題</span><div id="timer-track" class="timer-track" role="progressbar" aria-label="本題剩餘時間" aria-valuemin="0" aria-valuemax="2000" aria-valuenow="2000"><span id="timerFill" class="timer-fill"></span></div><b id="examTime">2.0 秒</b></div>
+          <p class="exam-instructions">20 題・每題 2 秒・答錯或超時都算錯</p>
           <p id="examSummary" class="exam-summary" aria-live="polite" hidden></p>
         </div>
-        <div class="left-controls">
+        <div id="practiceSettings" class="left-controls">
           <label class="target-control" for="targetInput">怪物數字 <input id="targetInput" class="target-input" type="number" inputmode="numeric" enterkeyhint="done" min="2" max="30" value="10" aria-label="自訂怪物數字" /></label>
           <div class="type-picker"><span class="type-picker-title">皮克敏</span><button id="openTypePicker" class="type-picker-button" type="button" aria-haspopup="dialog" aria-controls="typeDialog"><span id="selectedTypeIcons" class="type-picker-icons" aria-hidden="true"></span><span id="selectedTypeSummary">全部型態</span><span aria-hidden="true">⌄</span></button></div>
           <label class="toggle"><input id="randomTarget" type="checkbox" /> 每題隨機數字（≤10）</label>
           <label class="toggle"><input id="autoNext" type="checkbox" checked /> 答對自動下一題</label>
         </div>
-        <div class="buttons"><button id="newQuestion" class="btn btn-secondary" type="button">換一題 ↻</button><button id="checkAnswer" class="btn btn-primary" type="button">送出答案</button></div>
+        <div id="practiceActions" class="buttons"><button id="newQuestion" class="btn btn-secondary" type="button">換一題 ↻</button><button id="checkAnswer" class="btn btn-primary" type="button">送出答案</button></div>
       </div>
       <dialog id="typeDialog" class="type-dialog" aria-labelledby="typeDialogTitle">
         <div class="type-dialog-inner">
@@ -294,6 +314,7 @@
     let solved = false;
     let score = 0;
     let replaceNextKey = false;
+    let gameMode = 'practice';
     let examActive = false;
     let examQuestion = 0;
     let examCorrect = 0;
@@ -452,15 +473,49 @@
     }
 
     function updateExamControls() {
-      $('startExam').disabled = examActive;
+      $('startExam').disabled = examActive || gameMode !== 'exam';
       $('startExam').textContent = examActive ? '考試進行中…' : (examQuestion === EXAM_QUESTION_COUNT ? '再考一輪（20 題）' : '開始限時考試（20 題）');
-      $('newQuestion').disabled = examActive;
+      $('newQuestion').disabled = examActive || gameMode !== 'practice';
       $('checkAnswer').disabled = false;
       $('openHistory').disabled = examActive;
       targetInput.disabled = examActive || randomTarget.checked;
       randomTarget.disabled = examActive;
       autoNext.disabled = examActive;
-      $('openTypePicker').disabled = examActive;
+      $('openTypePicker').disabled = examActive || gameMode !== 'practice';
+    }
+
+    function setGameMode(mode) {
+      if (mode === gameMode) return;
+      if (examActive) {
+        if (!window.confirm('要結束目前這輪考試並切換模式嗎？未完成的考試不會存入紀錄。')) return;
+        stopExamTimer();
+        window.clearTimeout(examAdvanceTimeout);
+        examAdvanceTimeout = 0;
+        examActive = false;
+        examQuestion = 0;
+        examCorrect = 0;
+        examWrong = 0;
+        examTimedOut = 0;
+        score = 0;
+        $('score').textContent = '0';
+        $('examTracker').hidden = true;
+        $('examSummary').hidden = true;
+      }
+      gameMode = mode;
+      const examModeSelected = gameMode === 'exam';
+      document.body.classList.toggle('exam-mode', examModeSelected);
+      $('practiceMode').setAttribute('aria-pressed', String(!examModeSelected));
+      $('examMode').setAttribute('aria-pressed', String(examModeSelected));
+      $('practiceSettings').hidden = examModeSelected;
+      $('practiceActions').hidden = examModeSelected;
+      $('examToolbar').hidden = !examModeSelected;
+      $('examReady').hidden = !examModeSelected || examQuestion !== 0;
+      if (examModeSelected && examQuestion === EXAM_QUESTION_COUNT) {
+        $('examTracker').hidden = true;
+        $('examSummary').hidden = false;
+      }
+      updateExamControls();
+      if (!examModeSelected) chooseTarget();
     }
 
     function readExamHistory() {
@@ -524,6 +579,7 @@
       answer.disabled = true;
       $('checkAnswer').disabled = true;
       $('examTracker').hidden = true;
+      $('examReady').hidden = true;
       $('examSummary').hidden = false;
       $('examSummary').textContent = `本輪完成：答對 ${examCorrect} 題、答錯 ${examWrong} 題（超時 ${examTimedOut} 題），共 20 題。`;
       $('feedback').textContent = `考試完成！答對 ${examCorrect} / ${EXAM_QUESTION_COUNT} 題。`;
@@ -605,6 +661,7 @@
       $('score').textContent = '0';
       $('examTracker').hidden = false;
       $('examSummary').hidden = true;
+      $('examReady').hidden = true;
       $('startExam').textContent = '考試進行中…';
       updateExamControls();
       chooseTarget();
@@ -686,6 +743,8 @@
     }
 
     renderPikminTypeChoices();
+    $('practiceMode').addEventListener('click', () => setGameMode('practice'));
+    $('examMode').addEventListener('click', () => setGameMode('exam'));
     $('startExam').addEventListener('click', startExam);
     $('openHistory').addEventListener('click', () => { renderExamHistory(); historyDialog.showModal(); });
     $('closeHistory').addEventListener('click', () => historyDialog.close());
