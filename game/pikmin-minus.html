@@ -21,8 +21,6 @@
     .brand-mark { width:47px;height:47px;display:grid;place-items:center;background:#dce9cb;border:2px solid #c6d7af;border-radius:16px;font-size:27px;transform:rotate(-5deg); }
     .eyebrow { margin:0 0 2px; color:var(--green); font-weight:850; font-size:12px; letter-spacing:.15em; }
     h1 { margin:0; font-size:clamp(21px,4vw,31px); line-height:1.12; letter-spacing:-.045em; }
-    .score { display:flex;align-items:center;gap:9px;padding:9px 15px;background:#fffdf8;border:1px solid #e8e2d4;border-radius:999px;font-weight:850;white-space:nowrap;box-shadow:0 3px 9px #4556310b; }
-    .score b { color:#c58a20;font-variant-numeric:tabular-nums; }
     .intro { margin:0 0 16px 3px;color:#637064;font-size:14px; }
     .game { overflow:hidden; position:relative; border:1px solid #d9ddc9; border-radius:27px; background:#fbfaf3; box-shadow:0 18px 48px #4b61341a,0 3px 9px #4b61340a; }
     .playfield { height:clamp(330px,47vw,455px); min-height:330px; position:relative; overflow:hidden; background:linear-gradient(180deg,#dcefd8 0%,#eaf2d9 64%,#d8e7bd 64.2%,#c3d59f 100%); transition:height .22s ease; }
@@ -72,8 +70,10 @@
     .mode-tab[aria-pressed="true"] {background:#fffdf8;color:#3f6b41;box-shadow:0 2px 6px #45563114;}
     .history-button {height:40px;padding:0 13px;font-size:13px;}
     .exam-toolbar {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-    .exam-actions {display:flex;align-items:center;gap:8px;}
+    .exam-actions {display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
     .exam-actions .btn {height:40px;padding:0 13px;font-size:13px;}
+    .exam-count-control {display:flex;align-items:center;gap:6px;color:#667166;font-size:13px;font-weight:800;}
+    .exam-count-input {width:64px;height:40px;padding:0 7px;border:1px solid #dcded1;border-radius:11px;background:#f8f8f1;color:var(--ink);text-align:center;font-weight:850;}
     .exam-instructions {margin:0;color:#748074;font-size:12px;}
     .exam-tracker {display:flex;align-items:center;gap:10px;min-width:min(360px,100%);color:#566652;font-size:13px;font-weight:850;font-variant-numeric:tabular-nums;}
     .exam-tracker[hidden] {display:none;}
@@ -131,7 +131,6 @@
       .brand-mark{width:38px;height:38px;flex:0 0 38px;font-size:23px}
       .eyebrow{font-size:10px;letter-spacing:.12em}
       h1{font-size:clamp(18px,5.5vw,25px)}
-      .score{align-self:flex-end;padding:6px 11px;font-size:13px}
       .intro{font-size:12px;margin-bottom:12px}
       .playfield{height:clamp(360px,110vw,420px);min-height:360px}
       .scene-label{top:14px}
@@ -190,7 +189,6 @@
     body.landscape-compact .brand-mark{width:36px;height:36px;flex-basis:36px;font-size:21px}
     body.landscape-compact .eyebrow{font-size:10px}
     body.landscape-compact h1{font-size:clamp(18px,3vw,25px)}
-    body.landscape-compact .score{padding:6px 11px;font-size:13px}
     body.landscape-compact .intro{margin-bottom:8px;font-size:12px}
     body.landscape-compact .playfield{height:var(--landscape-scene-height,330px);min-height:330px}
     body.landscape-compact .scene-label{top:10px}
@@ -214,7 +212,6 @@
   <main class="page">
     <header>
       <div class="brand"><div class="brand-mark" aria-hidden="true">🌱</div><div><p class="eyebrow">PIKMIN × MATH TIME</p><h1>皮克敏減法大作戰</h1></div></div>
-      <div class="score" aria-live="polite"><span>🌼</span> 答對 <b id="score">0</b> 題</div>
     </header>
     <p class="intro">算出還差幾隻皮克敏，就能一起把怪物壓扁！</p>
 
@@ -230,7 +227,7 @@
         <div class="feedback" id="feedback" aria-live="polite"></div>
         <div class="monster-wrap" id="monsterWrap"><img class="monster" src="assets/bulborb.webp" alt="大眼怪物" /><span class="monster-number" id="monsterNumber">10</span></div>
         <div class="crew" id="crew" aria-label="已到場的皮克敏"></div>
-        <div id="examReady" class="exam-ready" hidden><div class="exam-ready-card"><strong>限時考試</strong><span>20 題・每題 2 秒・超時算錯</span></div></div>
+        <div id="examReady" class="exam-ready" hidden><div class="exam-ready-card"><strong>限時考試</strong><span><b id="examReadyCount">10</b> 題・每題 2 秒・超時算錯</span></div></div>
         <div class="flower f1">🌼</div><div class="flower f2">🌱</div><div class="flower f3">🌸</div><div class="flower f4">🌿</div>
         <div class="ground"></div>
       </div>
@@ -240,9 +237,9 @@
           <button id="openHistory" class="btn btn-secondary history-button" type="button">歷史紀錄</button>
         </div>
         <div id="examToolbar" class="exam-toolbar" hidden>
-          <div class="exam-actions"><button id="startExam" class="btn btn-primary" type="button">開始限時考試（20 題）</button></div>
-          <div id="examTracker" class="exam-tracker" hidden><span id="examProgress">第 0 / 20 題</span><div id="timer-track" class="timer-track" role="progressbar" aria-label="本題剩餘時間" aria-valuemin="0" aria-valuemax="2000" aria-valuenow="2000"><span id="timerFill" class="timer-fill"></span></div><b id="examTime">2.0 秒</b></div>
-          <p class="exam-instructions">20 題・每題 2 秒・答錯或超時都算錯</p>
+          <div class="exam-actions"><label class="exam-count-control" for="examQuestionCountInput">題數 <input id="examQuestionCountInput" class="exam-count-input" type="number" inputmode="numeric" min="1" max="100" value="10" aria-label="考試題數，1 到 100 題" /> 題</label><button id="startExam" class="btn btn-primary" type="button">開始限時考試（10 題）</button></div>
+          <div id="examTracker" class="exam-tracker" hidden><span id="examProgress">第 0 / 10 題</span><div id="timer-track" class="timer-track" role="progressbar" aria-label="本題剩餘時間" aria-valuemin="0" aria-valuemax="2000" aria-valuenow="2000"><span id="timerFill" class="timer-fill"></span></div><b id="examTime">2.0 秒</b></div>
+          <p class="exam-instructions">每題 2 秒・答錯或超時都算錯</p>
           <p id="examSummary" class="exam-summary" aria-live="polite" hidden></p>
         </div>
         <div id="practiceSettings" class="left-controls">
@@ -294,8 +291,9 @@
     const pikminTypeChoices = $('pikminTypeChoices');
     const typeDialog = $('typeDialog');
     const historyDialog = $('historyDialog');
+    const examQuestionCountInput = $('examQuestionCountInput');
     const coarsePointerMedia = window.matchMedia('(any-pointer: coarse)');
-    const EXAM_QUESTION_COUNT = 20;
+    const DEFAULT_EXAM_QUESTION_COUNT = 10;
     const EXAM_QUESTION_MS = 2000;
     const EXAM_HISTORY_KEY = 'pikmin-minus-exam-history-v1';
     const PIKMIN_TYPES = [
@@ -312,11 +310,11 @@
     let target = 10;
     let already = 2;
     let solved = false;
-    let score = 0;
     let replaceNextKey = false;
     let gameMode = 'practice';
     let examActive = false;
     let examQuestion = 0;
+    let examQuestionCount = DEFAULT_EXAM_QUESTION_COUNT;
     let examCorrect = 0;
     let examWrong = 0;
     let examTimedOut = 0;
@@ -464,7 +462,7 @@
     function startExamTimer() {
       stopExamTimer();
       examDeadline = performance.now() + EXAM_QUESTION_MS;
-      $('examProgress').textContent = `第 ${examQuestion} / ${EXAM_QUESTION_COUNT} 題`;
+      $('examProgress').textContent = `第 ${examQuestion} / ${examQuestionCount} 題`;
       $('timer-track').setAttribute('aria-valuemax', String(EXAM_QUESTION_MS));
       $('timer-track').setAttribute('aria-valuenow', String(EXAM_QUESTION_MS));
       $('timerFill').style.transform = 'scaleX(1)';
@@ -474,14 +472,30 @@
 
     function updateExamControls() {
       $('startExam').disabled = examActive || gameMode !== 'exam';
-      $('startExam').textContent = examActive ? '考試進行中…' : (examQuestion === EXAM_QUESTION_COUNT ? '再考一輪（20 題）' : '開始限時考試（20 題）');
+      $('startExam').textContent = examActive ? '考試進行中…' : (examQuestion === examQuestionCount ? `再考一輪（${examQuestionCount} 題）` : `開始限時考試（${examQuestionCount} 題）`);
       $('newQuestion').disabled = examActive || gameMode !== 'practice';
       $('checkAnswer').disabled = false;
       $('openHistory').disabled = examActive;
+      examQuestionCountInput.disabled = examActive;
       targetInput.disabled = examActive || randomTarget.checked;
       randomTarget.disabled = examActive;
       autoNext.disabled = examActive;
       $('openTypePicker').disabled = examActive || gameMode !== 'practice';
+    }
+
+    function applyExamQuestionCount() {
+      const raw = examQuestionCountInput.value.trim();
+      const entered = raw === '' ? DEFAULT_EXAM_QUESTION_COUNT : Math.floor(Number(raw));
+      examQuestionCount = Math.min(100, Math.max(1, Number.isFinite(entered) ? entered : DEFAULT_EXAM_QUESTION_COUNT));
+      examQuestionCountInput.value = String(examQuestionCount);
+      $('examReadyCount').textContent = examQuestionCount;
+      if (examQuestion > 0) {
+        examQuestion = 0;
+        $('examTracker').hidden = true;
+        $('examSummary').hidden = true;
+      }
+      $('examReady').hidden = gameMode !== 'exam';
+      updateExamControls();
     }
 
     function setGameMode(mode) {
@@ -496,8 +510,6 @@
         examCorrect = 0;
         examWrong = 0;
         examTimedOut = 0;
-        score = 0;
-        $('score').textContent = '0';
         $('examTracker').hidden = true;
         $('examSummary').hidden = true;
       }
@@ -510,7 +522,7 @@
       $('practiceActions').hidden = examModeSelected;
       $('examToolbar').hidden = !examModeSelected;
       $('examReady').hidden = !examModeSelected || examQuestion !== 0;
-      if (examModeSelected && examQuestion === EXAM_QUESTION_COUNT) {
+      if (examModeSelected && examQuestion === examQuestionCount) {
         $('examTracker').hidden = true;
         $('examSummary').hidden = false;
       }
@@ -533,7 +545,7 @@
         correct: examCorrect,
         wrong: examWrong,
         timedOut: examTimedOut,
-        total: EXAM_QUESTION_COUNT,
+        total: examQuestionCount,
         durationMs: Date.now() - examStartedAt,
         targetMode: randomTarget.checked ? '隨機數字（≤10）' : `怪物數字 ${targetInput.value || 10}`,
         pikminTypes: getSelectedPikminTypes().map((type) => type.name),
@@ -552,7 +564,7 @@
       if (records.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'history-empty';
-        empty.textContent = '還沒有考試紀錄，完成一輪 20 題後就會出現在這裡。';
+        empty.textContent = '還沒有考試紀錄，完成一輪考試後就會出現在這裡。';
         list.append(empty);
         return;
       }
@@ -581,8 +593,8 @@
       $('examTracker').hidden = true;
       $('examReady').hidden = true;
       $('examSummary').hidden = false;
-      $('examSummary').textContent = `本輪完成：答對 ${examCorrect} 題、答錯 ${examWrong} 題（超時 ${examTimedOut} 題），共 20 題。`;
-      $('feedback').textContent = `考試完成！答對 ${examCorrect} / ${EXAM_QUESTION_COUNT} 題。`;
+      $('examSummary').textContent = `本輪完成：答對 ${examCorrect} 題、答錯 ${examWrong} 題（超時 ${examTimedOut} 題），共 ${examQuestionCount} 題。`;
+      $('feedback').textContent = `考試完成！答對 ${examCorrect} / ${examQuestionCount} 題。`;
       $('feedback').className = 'feedback show';
       updateExamControls();
       $('checkAnswer').textContent = '本輪完成';
@@ -594,7 +606,7 @@
       window.clearTimeout(examAdvanceTimeout);
       examAdvanceTimeout = 0;
       if (!examActive) return;
-      if (examQuestion >= EXAM_QUESTION_COUNT) {
+      if (examQuestion >= examQuestionCount) {
         finishExam();
         return;
       }
@@ -627,8 +639,6 @@
       if (Number(value) === target - already) {
         solved = true;
         examCorrect++;
-        score = examCorrect;
-        $('score').textContent = score;
         playfield.classList.remove('wrong-state');
         $('feedback').textContent = '答對了！下一題。';
         $('feedback').className = 'feedback show';
@@ -648,6 +658,7 @@
 
     function startExam() {
       if (examActive) return;
+      applyExamQuestionCount();
       window.clearTimeout(examAdvanceTimeout);
       stopExamTimer();
       examActive = true;
@@ -657,8 +668,6 @@
       examTimedOut = 0;
       examStartedAt = Date.now();
       examLocked = false;
-      score = 0;
-      $('score').textContent = '0';
       $('examTracker').hidden = false;
       $('examSummary').hidden = true;
       $('examReady').hidden = true;
@@ -711,7 +720,7 @@
       const feedback = $('feedback');
       if (val === '') { feedback.textContent='先填上答案，皮克敏準備好了！'; feedback.className='feedback show'; answer.focus(); return; }
       if (Number(val) === target - already) {
-        solved = true; score++; $('score').textContent=score;
+        solved = true;
         playfield.classList.remove('wrong-state');
         feedback.textContent='答對了！皮克敏衝呀——'; feedback.className='feedback show';
         answer.value = target - already;
@@ -743,6 +752,7 @@
     }
 
     renderPikminTypeChoices();
+    examQuestionCountInput.addEventListener('change', applyExamQuestionCount);
     $('practiceMode').addEventListener('click', () => setGameMode('practice'));
     $('examMode').addEventListener('click', () => setGameMode('exam'));
     $('startExam').addEventListener('click', startExam);
