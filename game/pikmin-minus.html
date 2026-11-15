@@ -294,6 +294,7 @@
     syncOrientationLayout();
     window.addEventListener('resize', syncOrientationLayout, {passive:true});
     window.addEventListener('orientationchange', scheduleOrientationSync, {passive:true});
+    window.addEventListener('pageshow', scheduleOrientationSync);
     if (screen.orientation?.addEventListener) screen.orientation.addEventListener('change', scheduleOrientationSync);
 
     function shuffle(items) {
