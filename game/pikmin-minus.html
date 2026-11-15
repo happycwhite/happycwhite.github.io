@@ -60,6 +60,22 @@
     .wrong-state .pikmin {animation:none;left:var(--ground-x)!important;top:calc(100% - 68px)!important;transform:translateY(14px) rotate(90deg);transform-origin:center;}
     .keypad {display:none;}
     .controls {display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:18px 21px 20px;background:#fffdf8;}
+    .exam-toolbar {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+    .exam-actions {display:flex;align-items:center;gap:8px;}
+    .exam-actions .btn {height:40px;padding:0 13px;font-size:13px;}
+    .exam-tracker {display:flex;align-items:center;gap:10px;min-width:min(360px,100%);color:#566652;font-size:13px;font-weight:850;font-variant-numeric:tabular-nums;}
+    .exam-tracker[hidden] {display:none;}
+    .timer-track {height:10px;flex:1;min-width:70px;overflow:hidden;border-radius:999px;background:#e8ecdf;}
+    .timer-fill {display:block;width:100%;height:100%;transform:scaleX(1);transform-origin:left center;border-radius:inherit;background:#8caf69;transition:background .15s linear;}
+    .timer-fill.urgent {background:#e17854;}
+    .exam-summary {width:100%;margin:0;color:#537a4c;font-size:13px;font-weight:850;}
+    .history-dialog {max-height:min(82vh,680px);overflow:auto;}
+    .history-list {display:grid;gap:9px;}
+    .history-empty {padding:24px 12px;color:#778276;text-align:center;font-size:14px;}
+    .history-entry {display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px;border:1px solid #e4e7dc;border-radius:13px;background:#fbfcf7;}
+    .history-entry time {color:#71806b;font-size:12px;}
+    .history-entry strong {color:#3f6b41;font-size:15px;}
+    .history-entry span {grid-column:1/-1;color:#687466;font-size:12px;}
     .left-controls {display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
     .target-control {display:flex;align-items:center;gap:8px;color:#667166;font-size:13px;font-weight:750;}
     .type-picker {display:flex;align-items:center;gap:7px;color:#667166;font-size:12px;font-weight:750;}
@@ -118,6 +134,8 @@
       .ground{height:68px}
       .flower{bottom:65px}.f2,.f4{bottom:69px}
       .controls{grid-template-columns:1fr;padding:14px 10px 16px;gap:13px}
+      .exam-toolbar{justify-content:center}
+      .exam-tracker{min-width:min(360px,100%)}
       .left-controls{justify-content:center;gap:7px}
       .target-control{font-size:12px;gap:6px}
       .target-input{width:58px;height:38px}
@@ -202,6 +220,11 @@
         <div class="ground"></div>
       </div>
       <div class="controls">
+        <div class="exam-toolbar">
+          <div class="exam-actions"><button id="startExam" class="btn btn-primary" type="button">開始限時考試（20 題）</button><button id="openHistory" class="btn btn-secondary" type="button">歷史紀錄</button></div>
+          <div id="examTracker" class="exam-tracker" hidden><span id="examProgress">第 0 / 20 題</span><div id="timer-track" class="timer-track" role="progressbar" aria-label="本題剩餘時間" aria-valuemin="0" aria-valuemax="2000" aria-valuenow="2000"><span id="timerFill" class="timer-fill"></span></div><b id="examTime">2.0 秒</b></div>
+          <p id="examSummary" class="exam-summary" aria-live="polite" hidden></p>
+        </div>
         <div class="left-controls">
           <label class="target-control" for="targetInput">怪物數字 <input id="targetInput" class="target-input" type="number" inputmode="numeric" enterkeyhint="done" min="2" max="30" value="10" aria-label="自訂怪物數字" /></label>
           <div class="type-picker"><span class="type-picker-title">皮克敏</span><button id="openTypePicker" class="type-picker-button" type="button" aria-haspopup="dialog" aria-controls="typeDialog"><span id="selectedTypeIcons" class="type-picker-icons" aria-hidden="true"></span><span id="selectedTypeSummary">全部型態</span><span aria-hidden="true">⌄</span></button></div>
@@ -216,6 +239,14 @@
           <p class="type-dialog-description">勾選想出現的型態；選多種時會隨機混合。</p>
           <div id="pikminTypeChoices" class="type-options"></div>
           <div class="type-dialog-footer"><button id="doneTypePicker" class="type-dialog-done" type="button">完成</button></div>
+        </div>
+      </dialog>
+      <dialog id="historyDialog" class="type-dialog history-dialog" aria-labelledby="historyTitle">
+        <div class="type-dialog-inner">
+          <div class="type-dialog-header"><h2 id="historyTitle">限時考試紀錄</h2><button id="closeHistory" class="type-dialog-close" type="button" aria-label="關閉">×</button></div>
+          <p class="type-dialog-description">紀錄保存在這台裝置的瀏覽器中。</p>
+          <div id="examHistoryList" class="history-list"></div>
+          <div class="type-dialog-footer"><button id="doneHistory" class="type-dialog-done" type="button">完成</button></div>
         </div>
       </dialog>
       <aside class="keypad" id="keypad" aria-label="數字鍵盤" aria-hidden="true">
@@ -242,7 +273,11 @@
     const keypad = $('keypad');
     const pikminTypeChoices = $('pikminTypeChoices');
     const typeDialog = $('typeDialog');
+    const historyDialog = $('historyDialog');
     const coarsePointerMedia = window.matchMedia('(any-pointer: coarse)');
+    const EXAM_QUESTION_COUNT = 20;
+    const EXAM_QUESTION_MS = 2000;
+    const EXAM_HISTORY_KEY = 'pikmin-minus-exam-history-v1';
     const PIKMIN_TYPES = [
       { id: 'red', name: '紅色', src: 'assets/pikmin.webp' },
       { id: 'glow', name: '發光', src: 'assets/glow-pikmin-2x.webp' },
@@ -259,6 +294,16 @@
     let solved = false;
     let score = 0;
     let replaceNextKey = false;
+    let examActive = false;
+    let examQuestion = 0;
+    let examCorrect = 0;
+    let examWrong = 0;
+    let examTimedOut = 0;
+    let examStartedAt = 0;
+    let examLocked = false;
+    let examDeadline = 0;
+    let examTimerFrame = 0;
+    let examAdvanceTimeout = 0;
 
     function isPortraitOrientation() {
       if (typeof window.orientation === 'number') return Math.abs(window.orientation) % 180 === 0;
@@ -375,6 +420,196 @@
       }
     }
 
+    function stopExamTimer() {
+      if (examTimerFrame) cancelAnimationFrame(examTimerFrame);
+      examTimerFrame = 0;
+    }
+
+    function updateExamTimer() {
+      if (!examActive || examLocked) return;
+      const remaining = Math.max(0, examDeadline - performance.now());
+      const ratio = remaining / EXAM_QUESTION_MS;
+      $('examTime').textContent = `${(remaining / 1000).toFixed(1)} 秒`;
+      $('timerFill').style.transform = `scaleX(${ratio})`;
+      $('timerFill').classList.toggle('urgent', remaining <= 600);
+      $('timer-track')?.setAttribute('aria-valuenow', String(Math.ceil(remaining)));
+      if (remaining <= 0) {
+        timeoutExamQuestion();
+        return;
+      }
+      examTimerFrame = requestAnimationFrame(updateExamTimer);
+    }
+
+    function startExamTimer() {
+      stopExamTimer();
+      examDeadline = performance.now() + EXAM_QUESTION_MS;
+      $('examProgress').textContent = `第 ${examQuestion} / ${EXAM_QUESTION_COUNT} 題`;
+      $('timer-track').setAttribute('aria-valuemax', String(EXAM_QUESTION_MS));
+      $('timer-track').setAttribute('aria-valuenow', String(EXAM_QUESTION_MS));
+      $('timerFill').style.transform = 'scaleX(1)';
+      $('timerFill').classList.remove('urgent');
+      examTimerFrame = requestAnimationFrame(updateExamTimer);
+    }
+
+    function updateExamControls() {
+      $('startExam').disabled = examActive;
+      $('startExam').textContent = examActive ? '考試進行中…' : (examQuestion === EXAM_QUESTION_COUNT ? '再考一輪（20 題）' : '開始限時考試（20 題）');
+      $('newQuestion').disabled = examActive;
+      $('checkAnswer').disabled = false;
+      $('openHistory').disabled = examActive;
+      targetInput.disabled = examActive || randomTarget.checked;
+      randomTarget.disabled = examActive;
+      autoNext.disabled = examActive;
+      $('openTypePicker').disabled = examActive;
+    }
+
+    function readExamHistory() {
+      try {
+        const records = JSON.parse(localStorage.getItem(EXAM_HISTORY_KEY) || '[]');
+        return Array.isArray(records) ? records : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveExamHistory() {
+      const record = {
+        completedAt: new Date().toISOString(),
+        correct: examCorrect,
+        wrong: examWrong,
+        timedOut: examTimedOut,
+        total: EXAM_QUESTION_COUNT,
+        durationMs: Date.now() - examStartedAt,
+        targetMode: randomTarget.checked ? '隨機數字（≤10）' : `怪物數字 ${targetInput.value || 10}`,
+        pikminTypes: getSelectedPikminTypes().map((type) => type.name),
+      };
+      try {
+        localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify([record, ...readExamHistory()].slice(0, 50)));
+      } catch {
+        // The current result still appears even when browser storage is unavailable.
+      }
+    }
+
+    function renderExamHistory() {
+      const list = $('examHistoryList');
+      list.replaceChildren();
+      const records = readExamHistory();
+      if (records.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'history-empty';
+        empty.textContent = '還沒有考試紀錄，完成一輪 20 題後就會出現在這裡。';
+        list.append(empty);
+        return;
+      }
+      records.forEach((record) => {
+        const entry = document.createElement('div');
+        entry.className = 'history-entry';
+        const date = document.createElement('time');
+        date.dateTime = record.completedAt || '';
+        date.textContent = new Date(record.completedAt).toLocaleString('zh-TW');
+        const result = document.createElement('strong');
+        result.textContent = `答對 ${record.correct} / ${record.total}`;
+        const details = document.createElement('span');
+        const elapsedSeconds = Math.round((record.durationMs || 0) / 1000);
+        details.textContent = `答錯 ${record.wrong}（超時 ${record.timedOut}）・${record.targetMode}・${(record.pikminTypes || []).join('、')}型態・${elapsedSeconds} 秒`;
+        entry.append(date, result, details);
+        list.append(entry);
+      });
+    }
+
+    function finishExam() {
+      stopExamTimer();
+      examActive = false;
+      examLocked = true;
+      answer.disabled = true;
+      $('checkAnswer').disabled = true;
+      $('examTracker').hidden = true;
+      $('examSummary').hidden = false;
+      $('examSummary').textContent = `本輪完成：答對 ${examCorrect} 題、答錯 ${examWrong} 題（超時 ${examTimedOut} 題），共 20 題。`;
+      $('feedback').textContent = `考試完成！答對 ${examCorrect} / ${EXAM_QUESTION_COUNT} 題。`;
+      $('feedback').className = 'feedback show';
+      updateExamControls();
+      $('checkAnswer').textContent = '本輪完成';
+      $('checkAnswer').disabled = true;
+      saveExamHistory();
+    }
+
+    function advanceExamQuestion() {
+      window.clearTimeout(examAdvanceTimeout);
+      examAdvanceTimeout = 0;
+      if (!examActive) return;
+      if (examQuestion >= EXAM_QUESTION_COUNT) {
+        finishExam();
+        return;
+      }
+      examQuestion++;
+      chooseTarget();
+    }
+
+    function timeoutExamQuestion() {
+      if (!examActive || examLocked) return;
+      stopExamTimer();
+      examLocked = true;
+      examWrong++;
+      examTimedOut++;
+      answer.disabled = true;
+      playfield.classList.add('wrong-state');
+      $('timerFill').style.transform = 'scaleX(0)';
+      $('examTime').textContent = '0.0 秒';
+      $('feedback').textContent = `時間到！答案是 ${target - already}，下一題。`;
+      $('feedback').className = 'feedback show wrong';
+      examAdvanceTimeout = window.setTimeout(advanceExamQuestion, 0);
+    }
+
+    function submitExamAnswer() {
+      if (examLocked) return;
+      const value = answer.value.trim();
+      if (!value) return;
+      stopExamTimer();
+      examLocked = true;
+      answer.disabled = true;
+      if (Number(value) === target - already) {
+        solved = true;
+        examCorrect++;
+        score = examCorrect;
+        $('score').textContent = score;
+        playfield.classList.remove('wrong-state');
+        $('feedback').textContent = '答對了！下一題。';
+        $('feedback').className = 'feedback show';
+        drawPikmin(target);
+        requestAnimationFrame(() => playfield.classList.add('run'));
+        sparkleBurst();
+        examAdvanceTimeout = window.setTimeout(advanceExamQuestion, 450);
+      } else {
+        examWrong++;
+        replaceNextKey = true;
+        playfield.classList.add('wrong-state');
+        $('feedback').textContent = `答錯了，答案是 ${target - already}。下一題。`;
+        $('feedback').className = 'feedback show wrong';
+        examAdvanceTimeout = window.setTimeout(advanceExamQuestion, 450);
+      }
+    }
+
+    function startExam() {
+      if (examActive) return;
+      window.clearTimeout(examAdvanceTimeout);
+      stopExamTimer();
+      examActive = true;
+      examQuestion = 1;
+      examCorrect = 0;
+      examWrong = 0;
+      examTimedOut = 0;
+      examStartedAt = Date.now();
+      examLocked = false;
+      score = 0;
+      $('score').textContent = '0';
+      $('examTracker').hidden = false;
+      $('examSummary').hidden = true;
+      $('startExam').textContent = '考試進行中…';
+      updateExamControls();
+      chooseTarget();
+    }
+
     function chooseTarget() {
       const entered = Math.floor(Number(targetInput.value));
       target = randomTarget.checked ? 3 + Math.floor(Math.random() * 8) : Math.min(30, Math.max(2, entered || 10));
@@ -393,6 +628,10 @@
       $('checkAnswer').textContent = '送出答案';
       drawPikmin(already);
       answer.focus({preventScroll:true});
+      if (examActive) {
+        examLocked = false;
+        startExamTimer();
+      }
     }
 
     function sparkleBurst() {
@@ -406,6 +645,10 @@
     }
 
     function submit() {
+      if (examActive) {
+        submitExamAnswer();
+        return;
+      }
       if (solved) { chooseTarget(); return; }
       const val = answer.value.trim();
       const feedback = $('feedback');
@@ -443,6 +686,11 @@
     }
 
     renderPikminTypeChoices();
+    $('startExam').addEventListener('click', startExam);
+    $('openHistory').addEventListener('click', () => { renderExamHistory(); historyDialog.showModal(); });
+    $('closeHistory').addEventListener('click', () => historyDialog.close());
+    $('doneHistory').addEventListener('click', () => historyDialog.close());
+    historyDialog.addEventListener('click', (event) => { if (event.target === historyDialog) historyDialog.close(); });
     pikminTypeChoices.addEventListener('change', (event)=>{
       const selected = pikminTypeChoices.querySelectorAll('input:checked');
       if (selected.length === 0) {
@@ -456,7 +704,7 @@
     $('doneTypePicker').addEventListener('click', () => typeDialog.close());
     typeDialog.addEventListener('click', (event) => { if (event.target === typeDialog) typeDialog.close(); });
     $('checkAnswer').addEventListener('click', submit);
-    $('newQuestion').addEventListener('click', chooseTarget);
+    $('newQuestion').addEventListener('click', ()=>{ if (!examActive) chooseTarget(); });
     answer.addEventListener('input', ()=>{
       if (solved) {
         answer.value = target - already;
